@@ -1,0 +1,41 @@
+{
+  "name": "style-nation",
+  "version": "1.0.0",
+  "description": "Style Nation - Car Showroom",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "dev:web": "cd apps/web && pnpm dev",
+    "dev:api": "cd apps/api && pnpm dev",
+    "build": "pnpm run --recursive build",
+    "build:web": "cd apps/web && pnpm build",
+    "build:api": "cd apps/api && pnpm build",
+    "start": "pnpm run --recursive start",
+    "start:web": "cd apps/web && pnpm start",
+    "start:api": "cd apps/api && pnpm start",
+    "lint": "pnpm run --recursive lint",
+    "lint:fix": "pnpm run --recursive lint:fix",
+    "test": "pnpm run --recursive test",
+    "test:unit": "pnpm run --recursive test:unit",
+    "test:e2e": "pnpm run --recursive test:e2e",
+    "clean": "pnpm run --recursive clean",
+    "db:generate": "cd packages/database && pnpm db:generate",
+    "db:migrate": "cd packages/database && pnpm db:migrate",
+    "db:studio": "cd packages/database && pnpm db:studio",
+    "db:seed": "cd packages/database && pnpm db:seed"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "prettier": "^3.3.0",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/eslint-plugin": "^7.13.1",
+    "@typescript-eslint/parser": "^7.13.1"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

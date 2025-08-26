@@ -1,0 +1,1 @@
+Please read PLANNING.md, CLAUDE.md, and TASKS.md to understand the project. Then complete the first task from TASK.md. Always use context7 for necessary documentation.

@@ -1,0 +1,15 @@
+{
+  "name": "@style-nation/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types and interfaces",
+  "main": "index.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "rimraf": "^6.0.1"
+  }
+}

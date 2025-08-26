@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User model with role-based access
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  role          Role      @default(USER)
+  profile       Profile?
+  inquiries     Inquiry[]
+  createdCars   Car[]     @relation("CreatedBy")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+// User profile information
+model Profile {
+  id          String  @id @default(uuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName   String?
+  lastName    String?
+  phone       String?
+  dateOfBirth DateTime?
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  country     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+// Main car entity with all fields
+model Car {
+  id                String        @id @default(uuid())
+  make              String
+  model             String
+  year              Int
+  price             Decimal       @db.Decimal(10, 2)
+  mileage           Int?
+  vin               String        @unique
+  condition         Condition
+  transmissionType  Transmission
+  fuelType          FuelType
+  bodyType          BodyType
+  exteriorColor     String
+  interiorColor     String
+  engineSize        String?
+  features          String[]
+  description       String        @db.Text
+  images            CarImage[]
+  status            ListingStatus @default(AVAILABLE)
+  featuredUntil     DateTime?
+  facebookPostId    String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  createdBy         String
+  creator           User          @relation("CreatedBy", fields: [createdBy], references: [id])
+  inquiries         Inquiry[]
+  viewCount         Int           @default(0)
+  
+  @@index([status])
+  @@index([price])
+  @@index([make, model])
+  @@index([year])
+  @@index([createdAt(sort: Desc)])
+  @@map("cars")
+}
+
+// Car images with ordering and primary image selection
+model CarImage {
+  id        String   @id @default(uuid())
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean  @default(false)
+  order     Int
+  createdAt DateTime @default(now())
+  
+  @@index([carId])
+  @@map("car_images")
+}
+
+// Customer inquiries about cars
+model Inquiry {
+  id        String        @id @default(uuid())
+  carId     String
+  car       Car           @relation(fields: [carId], references: [id])
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id])
+  name      String
+  email     String
+  phone     String?
+  message   String        @db.Text
+  status    InquiryStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  
+  @@index([carId])
+  @@index([status])
+  @@map("inquiries")
+}
+
+// Facebook post tracking
+model FacebookPost {
+  id          String   @id @default(uuid())
+  carId       String   @unique
+  postId      String   @unique
+  message     String   @db.Text
+  imageUrl    String?
+  linkUrl     String?
+  publishedAt DateTime @default(now())
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([carId])
+  @@index([postId])
+  @@map("facebook_posts")
+}
+
+// System settings for configuration
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String   @db.Text
+  category  String   @default("general")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([key])
+  @@map("settings")
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Condition {
+  NEW
+  USED
+  CERTIFIED_PREOWNED
+}
+
+enum ListingStatus {
+  AVAILABLE
+  SOLD
+  RESERVED
+  INACTIVE
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+  CVT
+  DUAL_CLUTCH
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+  PLUG_IN_HYBRID
+}
+
+enum BodyType {
+  SEDAN
+  SUV
+  TRUCK
+  COUPE
+  CONVERTIBLE
+  WAGON
+  VAN
+  HATCHBACK
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}

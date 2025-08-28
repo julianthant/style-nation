@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run test:e2e:*)",
+      "Read(C:\\Users\\Julian\\Downloads\\builder-vibe-den/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\builder-vibe-den\\client\\pages/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\builder-vibe-den\\client\\components/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\builder-vibe-den\\client\\components/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\builder-vibe-den\\client\\components/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\builder-vibe-den\\client/**)",
+      "Read(C:\\Users\\Julian\\Projects\\style-nation\\apps\\web\\src\\app/**)",
+      "Read(C:\\Users\\Julian\\Projects\\style-nation\\apps\\web\\src\\app/**)",
+      "Read(C:\\Users\\Julian\\Projects\\style-nation\\apps\\web\\src\\components\\cars/**)",
+      "Read(C:\\Users\\Julian\\Projects\\style-nation\\apps\\web/**)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run dev:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

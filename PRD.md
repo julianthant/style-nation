@@ -1,18 +1,22 @@
 # Product Requirements Document
+
 ## Car Showroom Web Application
 
 ### 1. Executive Summary
 
 #### 1.1 Product Overview
+
 A modern web application for car showrooms to showcase their vehicle inventory with dual interfaces for administrators and customers. The platform features real-time inventory management with automatic social media integration for marketing purposes.
 
 #### 1.2 Business Objectives
+
 - Digital transformation of traditional car showroom operations
 - Automated marketing through Facebook integration
 - Improved customer engagement through modern web interface
 - Streamlined inventory management for administrators
 
 #### 1.3 Success Metrics
+
 - Time reduction in listing management (target: 50% reduction)
 - Increase in customer inquiries through digital channels
 - Facebook engagement rate on automated posts
@@ -25,31 +29,36 @@ A modern web application for car showrooms to showcase their vehicle inventory w
 #### 2.1 Technology Stack
 
 **Frontend:**
+
 - Framework: Next.js 14+ (App Router)
 - Language: TypeScript
 - Styling: Tailwind CSS
 - State Management: Zustand or Context API
-- Image Optimization: Next.js Image component with Cloudinary/AWS S3
+- Image Optimization: Next.js Image component with Cloudinary
 
 **Backend:**
+
 - Framework: NestJS
 - Language: TypeScript (Note: NestJS runs on Node.js, not Python)
 - ORM: Prisma
 - API: RESTful with potential GraphQL consideration
 
 **Infrastructure:**
+
 - Database: Supabase (PostgreSQL)
 - Authentication: Supabase Auth
-- File Storage: Supabase Storage or AWS S3
-- Hosting: Vercel (Frontend), Vercel Functions or Railway (Backend)
+- File Storage: Supabase Storage
+- Hosting: Vercel (Frontend), Vercel Functions
 - CDN: Vercel Edge Network
 
 **Third-party Integrations:**
+
 - Facebook Graph API
 - Analytics: Google Analytics 4 / Vercel Analytics
 - Error Tracking: Sentry
 
 #### 2.2 System Architecture Diagram
+
 ```
 ┌─────────────────┐     ┌─────────────────┐
 │   Next.js App   │────▶│  NestJS API     │
@@ -77,7 +86,9 @@ A modern web application for car showrooms to showcase their vehicle inventory w
 ### 3. User Roles & Permissions
 
 #### 3.1 Admin Role
+
 **Capabilities:**
+
 - Full CRUD operations on car listings
 - Manage media assets (images/videos)
 - Configure Facebook integration settings
@@ -87,12 +98,15 @@ A modern web application for car showrooms to showcase their vehicle inventory w
 - System settings management
 
 **Access Control:**
+
 - Protected routes with role-based middleware
 - Session timeout after 2 hours of inactivity
 - Two-factor authentication (optional but recommended)
 
 #### 3.2 User Role (Customer)
+
 **Capabilities:**
+
 - Browse car inventory
 - Advanced search and filtering
 - View detailed car information
@@ -107,7 +121,9 @@ A modern web application for car showrooms to showcase their vehicle inventory w
 ### 4. Feature Specifications
 
 #### 4.1 Authentication System
+
 **Implementation with Supabase Auth:**
+
 - Email/Password authentication
 - OAuth providers (Google, Facebook)
 - Magic link authentication
@@ -116,6 +132,7 @@ A modern web application for car showrooms to showcase their vehicle inventory w
 - Role-based access control using Supabase RLS
 
 **User Profile Management:**
+
 - Profile information editing
 - Preference settings
 - Inquiry history
@@ -124,6 +141,7 @@ A modern web application for car showrooms to showcase their vehicle inventory w
 #### 4.2 Car Listing Management
 
 **Data Model:**
+
 ```prisma
 model Car {
   id                String   @id @default(uuid())
@@ -178,6 +196,7 @@ enum ListingStatus {
 ```
 
 **Admin Features:**
+
 - Multi-step form for adding listings
 - Bulk image upload with drag-and-drop
 - Image reordering and primary image selection
@@ -190,11 +209,13 @@ enum ListingStatus {
 #### 4.3 Facebook Integration
 
 **Setup Requirements:**
+
 - Facebook Developer App creation
 - Page Access Token generation
 - Webhook configuration for post management
 
 **Posting Workflow:**
+
 1. Admin creates/updates listing
 2. System generates Facebook post content
 3. Post preview shown to admin
@@ -203,6 +224,7 @@ enum ListingStatus {
 6. Post ID stored for tracking
 
 **Post Template:**
+
 ```
 🚗 New Arrival Alert! 🚗
 
@@ -226,6 +248,7 @@ enum ListingStatus {
 ```
 
 **Error Handling:**
+
 - Retry mechanism for failed posts
 - Manual retry option
 - Error logging and admin notifications
@@ -234,10 +257,12 @@ enum ListingStatus {
 #### 4.4 Search & Filter System
 
 **Search Capabilities:**
+
 - Full-text search across make, model, description
 - Elasticsearch integration (optional for advanced search)
 
 **Filter Options:**
+
 - Price range (slider)
 - Year range
 - Make/Model (cascading dropdowns)
@@ -250,6 +275,7 @@ enum ListingStatus {
 - Condition
 
 **Sort Options:**
+
 - Price (low to high/high to low)
 - Year (newest/oldest)
 - Mileage (lowest/highest)
@@ -259,6 +285,7 @@ enum ListingStatus {
 #### 4.5 User Interface Specifications
 
 **Responsive Design Breakpoints:**
+
 - Mobile: 320px - 768px
 - Tablet: 768px - 1024px
 - Desktop: 1024px+
@@ -304,11 +331,13 @@ enum ListingStatus {
 #### 4.6 Performance Requirements
 
 **Page Load Times:**
+
 - First Contentful Paint: < 1.5s
 - Time to Interactive: < 3.5s
 - Largest Contentful Paint: < 2.5s
 
 **Optimization Strategies:**
+
 - Image lazy loading
 - Next.js ISR for car listings
 - Database indexing on frequent queries
@@ -320,6 +349,7 @@ enum ListingStatus {
 ### 5. Security Considerations
 
 #### 5.1 Authentication & Authorization
+
 - JWT token validation
 - Rate limiting on API endpoints
 - CORS configuration
@@ -327,6 +357,7 @@ enum ListingStatus {
 - SQL injection prevention (Prisma parameterized queries)
 
 #### 5.2 Data Protection
+
 - HTTPS enforcement
 - Encryption at rest (Supabase)
 - PII data handling compliance
@@ -334,6 +365,7 @@ enum ListingStatus {
 - Backup and disaster recovery plan
 
 #### 5.3 Facebook Integration Security
+
 - Secure token storage (environment variables)
 - Token refresh mechanism
 - Webhook signature verification
@@ -344,30 +376,35 @@ enum ListingStatus {
 ### 6. Development Phases
 
 #### Phase 1: Foundation (Weeks 1-3)
+
 - Project setup and configuration
 - Database schema implementation
 - Authentication system
 - Basic admin and user roles
 
 #### Phase 2: Core Features (Weeks 4-6)
+
 - Car listing CRUD operations
 - Image upload and management
 - Search and filter functionality
 - User-facing inventory pages
 
 #### Phase 3: Facebook Integration (Weeks 7-8)
+
 - Facebook API setup
 - Automated posting functionality
 - Post management interface
 - Error handling and retry logic
 
 #### Phase 4: Enhanced Features (Weeks 9-10)
+
 - Analytics dashboard
 - Inquiry management system
 - Advanced search features
 - Performance optimization
 
 #### Phase 5: Testing & Deployment (Weeks 11-12)
+
 - Unit and integration testing
 - User acceptance testing
 - Performance testing
@@ -379,6 +416,7 @@ enum ListingStatus {
 ### 7. API Endpoints
 
 #### Core Endpoints
+
 ```
 Authentication:
 POST   /api/auth/register
@@ -420,6 +458,7 @@ GET    /api/analytics/cars/:id  (admin only)
 ### 8. Database Schema Considerations
 
 #### Indexes
+
 ```sql
 CREATE INDEX idx_cars_status ON cars(status);
 CREATE INDEX idx_cars_price ON cars(price);
@@ -429,6 +468,7 @@ CREATE INDEX idx_cars_created_at ON cars(created_at DESC);
 ```
 
 #### Row Level Security (Supabase RLS)
+
 ```sql
 -- Public read access for available cars
 CREATE POLICY "Public can view available cars" ON cars
@@ -444,11 +484,13 @@ FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
 ### 9. Monitoring & Analytics
 
 #### Application Monitoring
+
 - Vercel Analytics for performance metrics
 - Sentry for error tracking
 - Custom analytics for business metrics
 
 #### Key Metrics to Track
+
 - Page views per listing
 - Conversion rate (views to inquiries)
 - Most viewed cars
@@ -462,6 +504,7 @@ FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
 ### 10. Future Enhancements
 
 #### Version 2.0 Considerations
+
 - WhatsApp Business API integration
 - Virtual car tours (360° views)
 - AI-powered chatbot for inquiries
@@ -490,6 +533,7 @@ FOR ALL USING (auth.jwt() ->> 'role' = 'admin');
 ### 12. Success Criteria
 
 #### Launch Readiness Checklist
+
 - [ ] All core features implemented and tested
 - [ ] Security audit completed
 - [ ] Performance benchmarks met

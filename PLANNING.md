@@ -3,16 +3,20 @@
 ## 🎯 Vision & Mission
 
 ### Vision Statement
+
 To create Style Nation - the industry's most intuitive and efficient digital car showroom platform that seamlessly bridges the gap between traditional automotive retail and modern digital commerce, while automating marketing efforts through intelligent social media integration.
 
 ### Mission
+
 Empower car dealerships to:
+
 - Transform their inventory management with a modern, efficient digital platform
 - Reach customers through automated, engaging social media presence
 - Provide exceptional online car browsing experiences that convert visitors into buyers
 - Streamline operations and reduce manual administrative work by 70%
 
 ### Core Values
+
 - **Simplicity**: Intuitive interfaces that require minimal training
 - **Reliability**: 99.9% uptime with robust error handling
 - **Performance**: Lightning-fast load times and responsive interactions
@@ -24,6 +28,7 @@ Empower car dealerships to:
 ### Target Users
 
 #### Primary Users
+
 1. **Car Dealership Administrators**
    - Age: 30-55
    - Tech Savvy: Moderate
@@ -37,11 +42,13 @@ Empower car dealerships to:
    - Pain Points: Limited inventory visibility, lack of detailed information, poor mobile experience
 
 #### Secondary Users
+
 - **Sales Representatives**: Need quick access to inventory and customer inquiries
 - **Marketing Teams**: Require analytics and campaign management tools
 - **Finance Managers**: Need integration with financing tools
 
 ### Key Differentiators
+
 - **Automatic Facebook Integration**: One-click social media marketing
 - **Real-time Inventory Sync**: Always up-to-date listings across all platforms
 - **Mobile-First Design**: 60% of users browse on mobile devices
@@ -49,6 +56,7 @@ Empower car dealerships to:
 - **SEO Optimized**: Built-in SEO best practices for maximum visibility
 
 ### Success Metrics
+
 - **Business Metrics**:
   - 50% reduction in time spent on inventory management
   - 30% increase in qualified leads
@@ -71,29 +79,29 @@ graph TB
         WEB[Next.js Web App]
         MOB[Future: Mobile App]
     end
-    
+
     subgraph "API Gateway"
         NGINX[Nginx/Vercel Edge]
     end
-    
+
     subgraph "Application Layer"
         API[NestJS API Server]
         WORKER[Background Workers]
     end
-    
+
     subgraph "Data Layer"
         SUPA[Supabase PostgreSQL]
         REDIS[Redis Cache]
         S3[Object Storage]
     end
-    
+
     subgraph "External Services"
         FB[Facebook API]
         EMAIL[Email Service]
         ANALYTICS[Analytics]
         SENTRY[Error Tracking]
     end
-    
+
     WEB --> NGINX
     MOB --> NGINX
     NGINX --> API
@@ -109,6 +117,7 @@ graph TB
 ### Detailed Component Architecture
 
 #### Frontend Architecture (Next.js)
+
 ```
 ┌─────────────────────────────────────────────┐
 │                   Next.js App                │
@@ -127,6 +136,7 @@ graph TB
 ```
 
 #### Backend Architecture (NestJS)
+
 ```
 ┌─────────────────────────────────────────────┐
 │                 NestJS Server                │
@@ -187,21 +197,21 @@ Production Environment:
     - Regions: Global Edge Network
     - Auto-scaling: Enabled
     - CDN: Vercel Edge Network
-    
+
   Backend:
     - Platform: Vercel Functions / Railway
     - Instances: Auto-scaling (2-10)
     - Memory: 512MB - 1GB
     - Timeout: 30s
-    
+
   Database:
     - Platform: Supabase
     - Plan: Pro
     - Backup: Daily
     - Replicas: 1 Read Replica
-    
+
   Storage:
-    - Platform: Supabase Storage / AWS S3
+    - Platform: Supabase Storage
     - CDN: CloudFront
     - Backup: Cross-region replication
 ```
@@ -211,80 +221,87 @@ Production Environment:
 ### Core Technologies
 
 #### Frontend Stack
-| Technology | Version | Purpose | Rationale |
-|------------|---------|---------|-----------|
-| **Next.js** | 14.2+ | React Framework | Server-side rendering, SEO, performance |
-| **React** | 18.3+ | UI Library | Component-based architecture, ecosystem |
-| **TypeScript** | 5.5+ | Type Safety | Fewer bugs, better DX, IDE support |
-| **Tailwind CSS** | 3.4+ | Styling | Utility-first, consistent design, fast development |
-| **Shadcn/ui** | Latest | Component Library | Beautiful, accessible, customizable components |
-| **Zustand** | 4.5+ | State Management | Simple, lightweight, TypeScript-first |
-| **React Query** | 5.0+ | Data Fetching | Caching, synchronization, background updates |
-| **React Hook Form** | 7.52+ | Form Management | Performance, validation, minimal re-renders |
-| **Zod** | 3.23+ | Schema Validation | Type-safe validation, works with TypeScript |
+
+| Technology          | Version | Purpose           | Rationale                                          |
+| ------------------- | ------- | ----------------- | -------------------------------------------------- |
+| **Next.js**         | 14.2+   | React Framework   | Server-side rendering, SEO, performance            |
+| **React**           | 18.3+   | UI Library        | Component-based architecture, ecosystem            |
+| **TypeScript**      | 5.5+    | Type Safety       | Fewer bugs, better DX, IDE support                 |
+| **Tailwind CSS**    | 3.4+    | Styling           | Utility-first, consistent design, fast development |
+| **Shadcn/ui**       | Latest  | Component Library | Beautiful, accessible, customizable components     |
+| **Zustand**         | 4.5+    | State Management  | Simple, lightweight, TypeScript-first              |
+| **React Query**     | 5.0+    | Data Fetching     | Caching, synchronization, background updates       |
+| **React Hook Form** | 7.52+   | Form Management   | Performance, validation, minimal re-renders        |
+| **Zod**             | 3.23+   | Schema Validation | Type-safe validation, works with TypeScript        |
 
 #### Backend Stack
-| Technology | Version | Purpose | Rationale |
-|------------|---------|---------|-----------|
-| **NestJS** | 10.0+ | Node.js Framework | Enterprise-grade, modular, TypeScript-first |
-| **Prisma** | 5.16+ | ORM | Type-safe queries, migrations, great DX |
-| **Passport.js** | 0.7+ | Authentication | Flexible, supports multiple strategies |
-| **class-validator** | 0.14+ | Validation | Decorator-based validation |
-| **class-transformer** | 0.5+ | Serialization | DTO transformation |
-| **Bull** | 4.12+ | Job Queue | Background jobs, Facebook posting |
-| **Helmet** | 7.1+ | Security | Security headers |
-| **compression** | 1.7+ | Compression | Reduce payload size |
+
+| Technology            | Version | Purpose           | Rationale                                   |
+| --------------------- | ------- | ----------------- | ------------------------------------------- |
+| **NestJS**            | 10.0+   | Node.js Framework | Enterprise-grade, modular, TypeScript-first |
+| **Prisma**            | 5.16+   | ORM               | Type-safe queries, migrations, great DX     |
+| **Passport.js**       | 0.7+    | Authentication    | Flexible, supports multiple strategies      |
+| **class-validator**   | 0.14+   | Validation        | Decorator-based validation                  |
+| **class-transformer** | 0.5+    | Serialization     | DTO transformation                          |
+| **Bull**              | 4.12+   | Job Queue         | Background jobs, Facebook posting           |
+| **Helmet**            | 7.1+    | Security          | Security headers                            |
+| **compression**       | 1.7+    | Compression       | Reduce payload size                         |
 
 #### Infrastructure & Database
-| Technology | Version | Purpose | Rationale |
-|------------|---------|---------|-----------|
-| **Supabase** | Latest | BaaS Platform | PostgreSQL, Auth, Storage, Realtime |
-| **PostgreSQL** | 15+ | Database | ACID compliance, JSON support, performance |
-| **Redis** | 7.2+ | Caching | Session store, queue, caching |
-| **Docker** | 24+ | Containerization | Consistent environments, easy deployment |
-| **Nginx** | 1.25+ | Reverse Proxy | Load balancing, SSL termination |
+
+| Technology     | Version | Purpose          | Rationale                                  |
+| -------------- | ------- | ---------------- | ------------------------------------------ |
+| **Supabase**   | Latest  | BaaS Platform    | PostgreSQL, Auth, Storage, Realtime        |
+| **PostgreSQL** | 15+     | Database         | ACID compliance, JSON support, performance |
+| **Redis**      | 7.2+    | Caching          | Session store, queue, caching              |
+| **Docker**     | 24+     | Containerization | Consistent environments, easy deployment   |
+| **Nginx**      | 1.25+   | Reverse Proxy    | Load balancing, SSL termination            |
 
 #### External Services
-| Service | Purpose | Pricing Tier |
-|---------|---------|--------------|
-| **Vercel** | Hosting & CDN | Pro ($20/month) |
-| **Supabase** | Database & Auth | Pro ($25/month) |
-| **Facebook API** | Social Media | Free (with limits) |
-| **Sentry** | Error Tracking | Team ($26/month) |
-| **Postmark** | Transactional Email | 10k emails ($15/month) |
-| **Cloudinary** | Image Optimization | Plus ($89/month) |
-| **Google Analytics** | Analytics | Free |
-| **Uptime Robot** | Monitoring | Free |
+
+| Service              | Purpose             | Pricing Tier           |
+| -------------------- | ------------------- | ---------------------- |
+| **Vercel**           | Hosting & CDN       | Pro ($20/month)        |
+| **Supabase**         | Database & Auth     | Pro ($25/month)        |
+| **Facebook API**     | Social Media        | Free (with limits)     |
+| **Sentry**           | Error Tracking      | Team ($26/month)       |
+| **Postmark**         | Transactional Email | 10k emails ($15/month) |
+| **Cloudinary**       | Image Optimization  | Plus ($89/month)       |
+| **Google Analytics** | Analytics           | Free                   |
+| **Uptime Robot**     | Monitoring          | Free                   |
 
 ### Development Stack
 
 #### Development Tools
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **Node.js** | 20.x LTS | Runtime |
-| **pnpm** | 9.x | Package Manager |
-| **Git** | 2.40+ | Version Control |
-| **VS Code** | Latest | IDE |
-| **Postman** | Latest | API Testing |
-| **Docker Desktop** | Latest | Local Development |
+
+| Tool               | Version  | Purpose           |
+| ------------------ | -------- | ----------------- |
+| **Node.js**        | 20.x LTS | Runtime           |
+| **pnpm**           | 9.x      | Package Manager   |
+| **Git**            | 2.40+    | Version Control   |
+| **VS Code**        | Latest   | IDE               |
+| **Postman**        | Latest   | API Testing       |
+| **Docker Desktop** | Latest   | Local Development |
 
 #### Code Quality Tools
-| Tool | Purpose | Configuration |
-|------|---------|---------------|
-| **ESLint** | Linting | Airbnb + Custom Rules |
-| **Prettier** | Formatting | 2 spaces, semicolons |
-| **Husky** | Git Hooks | Pre-commit, pre-push |
-| **lint-staged** | Staged Files | Lint & format |
-| **Commitlint** | Commit Messages | Conventional commits |
-| **Jest** | Unit Testing | 80% coverage target |
-| **Cypress** | E2E Testing | Critical paths |
-| **Playwright** | Cross-browser Testing | Chrome, Firefox, Safari |
+
+| Tool            | Purpose               | Configuration           |
+| --------------- | --------------------- | ----------------------- |
+| **ESLint**      | Linting               | Airbnb + Custom Rules   |
+| **Prettier**    | Formatting            | 2 spaces, semicolons    |
+| **Husky**       | Git Hooks             | Pre-commit, pre-push    |
+| **lint-staged** | Staged Files          | Lint & format           |
+| **Commitlint**  | Commit Messages       | Conventional commits    |
+| **Jest**        | Unit Testing          | 80% coverage target     |
+| **Cypress**     | E2E Testing           | Critical paths          |
+| **Playwright**  | Cross-browser Testing | Chrome, Firefox, Safari |
 
 ## 🛠️ Required Tools & Setup
 
 ### Development Environment Setup
 
 #### 1. System Requirements
+
 ```yaml
 Minimum Requirements:
   - OS: macOS 12+, Windows 10+, Ubuntu 20.04+
@@ -297,6 +314,7 @@ Minimum Requirements:
 #### 2. Required Software Installation
 
 ##### Core Tools
+
 ```bash
 # Node.js (via nvm)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -322,6 +340,7 @@ pnpm add -g prisma
 ```
 
 ##### Development Tools
+
 ```bash
 # Git
 # macOS
@@ -373,6 +392,7 @@ pnpm dev
 #### 4. Account Requirements
 
 ##### Required Accounts
+
 - [ ] **GitHub** - Version control
 - [ ]] **Vercel** - Deployment (connect GitHub)
 - [ ] **Supabase** - Database & Auth
@@ -381,6 +401,7 @@ pnpm dev
 - [ ] **Sentry** - Error tracking
 
 ##### Optional Accounts
+
 - [ ] **Cloudinary** - Image optimization
 - [ ] **Postmark/SendGrid** - Email service
 - [ ] **Uptime Robot** - Monitoring
@@ -389,6 +410,7 @@ pnpm dev
 ### Environment Configuration
 
 #### Development Environment Variables
+
 ```bash
 # .env.local (Next.js)
 NEXT_PUBLIC_SUPABASE_URL=https://[project].supabase.co
@@ -448,6 +470,7 @@ RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
 ### VS Code Settings
 
 #### .vscode/settings.json
+
 ```json
 {
   "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -472,6 +495,7 @@ RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
 ```
 
 #### .vscode/extensions.json
+
 ```json
 {
   "recommendations": [
@@ -494,6 +518,7 @@ RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
 ## 📋 Pre-Development Checklist
 
 ### Technical Setup
+
 - [ ] Development environment configured
 - [ ] All required tools installed
 - [ ] Git repository initialized
@@ -504,6 +529,7 @@ RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
 - [ ] Authentication system tested
 
 ### Accounts & Services
+
 - [ ] Vercel account created and linked
 - [ ] Supabase project created
 - [ ] Facebook Developer app configured
@@ -514,6 +540,7 @@ RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
 - [ ] Error monitoring configured
 
 ### Design & Planning
+
 - [ ] UI/UX designs approved
 - [ ] Database schema finalized
 - [ ] API specifications documented
@@ -524,6 +551,7 @@ RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
 - [ ] SEO strategy planned
 
 ### Team & Process
+
 - [ ] Team roles assigned
 - [ ] Communication channels setup
 - [ ] Project management tool configured
@@ -536,6 +564,7 @@ RECAPTCHA_SECRET_KEY=your-recaptcha-secret-key
 ## 🚀 Development Workflow
 
 ### Git Branch Strategy
+
 ```
 main
 ├── develop
@@ -548,6 +577,7 @@ main
 ```
 
 ### Commit Convention
+
 ```
 type(scope): subject
 
@@ -565,6 +595,7 @@ feat(cars): add image upload functionality
 ```
 
 ### Development Process
+
 1. **Planning Phase**
    - Review requirements
    - Design technical solution
@@ -591,6 +622,7 @@ feat(cars): add image upload functionality
 ## 📊 Monitoring & Maintenance
 
 ### Key Performance Indicators
+
 - **Application Performance**
   - Page Load Time
   - API Response Time
@@ -610,6 +642,7 @@ feat(cars): add image upload functionality
   - Storage Usage
 
 ### Maintenance Schedule
+
 - **Daily**: Monitor error logs, check system health
 - **Weekly**: Review analytics, update dependencies
 - **Monthly**: Security patches, performance optimization
@@ -618,6 +651,7 @@ feat(cars): add image upload functionality
 ## 🎓 Resources & Documentation
 
 ### Internal Documentation
+
 - `README.md` - Project overview and setup
 - `CLAUDE.md` - AI development guide
 - `PLANNING.md` - This document
@@ -626,6 +660,7 @@ feat(cars): add image upload functionality
 - `SECURITY.md` - Security best practices
 
 ### External Resources
+
 - [Next.js Documentation](https://nextjs.org/docs)
 - [NestJS Documentation](https://docs.nestjs.com)
 - [Prisma Documentation](https://www.prisma.io/docs)
@@ -634,6 +669,7 @@ feat(cars): add image upload functionality
 - [Vercel Documentation](https://vercel.com/docs)
 
 ### Learning Resources
+
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [React Patterns](https://reactpatterns.com)
 - [Clean Code JavaScript](https://github.com/ryanmcdermott/clean-code-javascript)
@@ -642,12 +678,14 @@ feat(cars): add image upload functionality
 ## 📝 Notes & Considerations
 
 ### Scalability Considerations
+
 - Implement database indexing strategy early
 - Design for horizontal scaling from the start
 - Use caching aggressively but intelligently
 - Consider microservices architecture for future
 
 ### Security Considerations
+
 - Implement rate limiting on all endpoints
 - Use parameterized queries (Prisma handles this)
 - Validate all user inputs
@@ -656,6 +694,7 @@ feat(cars): add image upload functionality
 - GDPR compliance for EU users
 
 ### Performance Optimization
+
 - Implement lazy loading for images
 - Use ISR for static pages
 - Optimize bundle size
@@ -664,6 +703,7 @@ feat(cars): add image upload functionality
 - Database query optimization
 
 ### Future Enhancements
+
 - Mobile applications (React Native)
 - AI-powered chat support
 - Virtual showroom (3D/AR)

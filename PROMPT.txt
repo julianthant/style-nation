@@ -1,1 +1,1 @@
-Please read PLANNING.md, CLAUDE.md, and TASKS.md to understand the project. Then complete the first task from TASK.md. Always use context7 for necessary documentation.
+Please read PLANNING.md, CLAUDE.md, and TASKS.md to understand the project. Read Summary.md to understand what was done in the previous session. Then complete the milestone 2's supabase config and supabase auth in next js from TASK.md then cross off that task. Always use context7 for necessary documentation. Check the tasks off as you go in tasks.md.

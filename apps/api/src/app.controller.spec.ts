@@ -1,22 +1,142 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ModuleMocker, MockMetadata } from 'jest-mock';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { JwtAuthGuard } from './auth/guards/jwt.auth.guard';
+
+const moduleMocker = new ModuleMocker(global);
 
 describe('AppController', () => {
   let appController: AppController;
+  let appService: AppService;
+
+  const mockAppService = {
+    getHello: jest.fn(),
+    getHealth: jest.fn(),
+  };
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
-    }).compile();
+      providers: [
+        {
+          provide: AppService,
+          useValue: mockAppService,
+        },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .compile();
 
     appController = app.get<AppController>(AppController);
+    appService = app.get<AppService>(AppService);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should be defined', () => {
+    expect(appController).toBeDefined();
+  });
+
+  describe('getHello', () => {
+    it('should return hello message', () => {
+      const expectedResult = {
+        message: 'Style Nation API is running!',
+        timestamp: expect.any(String),
+        version: '1.0.0',
+      };
+
+      mockAppService.getHello.mockReturnValue(expectedResult);
+
+      const result = appController.getHello();
+
+      expect(result).toEqual(expectedResult);
+      expect(mockAppService.getHello).toHaveBeenCalled();
+    });
+
+    it('should delegate to AppService', () => {
+      mockAppService.getHello.mockReturnValue({});
+
+      appController.getHello();
+
+      expect(mockAppService.getHello).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getHealth', () => {
+    it('should return health status', () => {
+      const expectedHealth = {
+        status: 'ok',
+        message: 'API is healthy',
+        timestamp: expect.any(String),
+        uptime: expect.any(Number),
+        environment: 'test',
+        database: 'connected',
+      };
+
+      mockAppService.getHealth.mockReturnValue(expectedHealth);
+
+      const result = appController.getHealth();
+
+      expect(result).toEqual(expectedHealth);
+      expect(mockAppService.getHealth).toHaveBeenCalled();
+    });
+
+    it('should delegate to AppService', () => {
+      mockAppService.getHealth.mockReturnValue({});
+
+      appController.getHealth();
+
+      expect(mockAppService.getHealth).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('protected', () => {
+    it('should return protected message with user data', async () => {
+      const mockRequest = {
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+          role: 'USER',
+        },
+      };
+
+      const result = await appController.protected(mockRequest);
+
+      expect(result).toEqual({
+        message: 'AuthGuard works 🎉',
+        authenticated_user: mockRequest.user,
+      });
+    });
+
+    it('should handle request without user data', async () => {
+      const mockRequest = {
+        user: undefined,
+      };
+
+      const result = await appController.protected(mockRequest);
+
+      expect(result).toEqual({
+        message: 'AuthGuard works 🎉',
+        authenticated_user: undefined,
+      });
+    });
+
+    it('should handle request with partial user data', async () => {
+      const mockRequest = {
+        user: {
+          id: 'user-123',
+          // Missing email and role
+        },
+      };
+
+      const result = await appController.protected(mockRequest);
+
+      expect(result.authenticated_user).toEqual(mockRequest.user);
+      expect(result.message).toBe('AuthGuard works 🎉');
     });
   });
 });

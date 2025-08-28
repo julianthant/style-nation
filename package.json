@@ -19,14 +19,13 @@
     "test:unit": "pnpm run --recursive test:unit",
     "test:e2e": "pnpm run --recursive test:e2e",
     "clean": "pnpm run --recursive clean",
-    "db:generate": "cd packages/database && pnpm db:generate",
-    "db:migrate": "cd packages/database && pnpm db:migrate",
-    "db:studio": "cd packages/database && pnpm db:studio",
-    "db:seed": "cd packages/database && pnpm db:seed"
+    "db:generate": "cd apps/api && pnpm prisma:generate",
+    "db:migrate": "cd apps/api && pnpm prisma:migrate",
+    "db:studio": "cd apps/api && pnpm prisma:studio",
+    "db:seed": "cd apps/api && pnpm prisma:seed"
   },
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "devDependencies": {
     "prettier": "^3.3.0",

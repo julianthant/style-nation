@@ -1,98 +1,142 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Style Nation API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A modern NestJS REST API for car showroom management with Facebook integration.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Quick Start
 
-## Description
+### Prerequisites
+- Node.js 20.x LTS
+- npm or pnpm
+- PostgreSQL database (or Supabase account)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Installation
 
-## Project setup
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-$ pnpm install
+2. **Setup environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual configuration
+   ```
+
+3. **Database setup**
+   ```bash
+   # Generate Prisma client
+   npm run prisma:generate
+   
+   # Run migrations
+   npm run prisma:migrate
+   
+   # Seed with demo data
+   npm run prisma:seed
+   ```
+
+4. **Start development server**
+   ```bash
+   npm run start:dev
+   ```
+
+5. **View API documentation**
+   - API Docs: http://localhost:3001/api/docs
+   - Health Check: http://localhost:3001/api/health
+
+## 📁 Project Structure
+
+```
+src/
+├── auth/          # JWT authentication & authorization
+├── users/         # User management (CRUD, profiles)
+├── prisma/        # Database service & configuration
+├── cars/          # Car listings (TODO)
+├── inquiries/     # Customer inquiries (TODO)
+├── facebook/      # Facebook integration (TODO)
+└── main.ts        # Application entry point
 ```
 
-## Compile and run the project
+## 🔐 Authentication
+
+The API uses JWT Bearer token authentication:
 
 ```bash
-# development
-$ pnpm run start
+# Login
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@stylenation.com","password":"admin123"}'
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# Use token in requests
+curl -X GET http://localhost:3001/api/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-## Run tests
+## 📊 Database
+
+- **ORM**: Prisma
+- **Database**: PostgreSQL (Supabase recommended)
+- **Models**: User, Profile, Car, CarImage, Inquiry
+
+## 🛠️ Development Commands
 
 ```bash
-# unit tests
-$ pnpm run test
+# Development
+npm run start:dev          # Start with hot reload
+npm run build              # Build for production
 
-# e2e tests
-$ pnpm run test:e2e
+# Database
+npm run prisma:migrate     # Run migrations
+npm run prisma:seed        # Seed demo data
+npm run prisma:studio      # Database GUI
 
-# test coverage
-$ pnpm run test:cov
+# Testing
+npm run test              # Unit tests
+npm run test:e2e          # E2E tests
 ```
 
-## Deployment
+## 📚 API Endpoints
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Authentication
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get current user
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Users
+- `POST /api/users/register` - Register (public)
+- `GET /api/users/me` - Current user profile
+- `POST /api/users/change-password` - Change password
+- `GET /api/users` - List users (admin only)
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
+### Cars (Coming Soon)
+- Car CRUD operations
+- Search and filtering
+- Image management
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🔧 Environment Variables
 
-## Resources
+See `.env.example` for all required configuration options.
 
-Check out a few resources that may come in handy when working with NestJS:
+## 📖 Documentation
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- **Swagger API Docs**: http://localhost:3001/api/docs
+- **Implementation Guide**: `./CLAUDE.md`
+- **Detailed Tasks**: `./TASKS.md`
 
-## Support
+## 🧪 Demo Data
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+After running `npm run prisma:seed`:
 
-## Stay in touch
+- **Admin User**: admin@stylenation.com / admin123
+- **Regular User**: john@example.com / user123
+- **Sample Cars**: Honda Accord, BMW 330i, Subaru Outback
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 🚧 Status
 
-## License
+- ✅ Authentication & Authorization
+- ✅ User Management
+- ⏳ Car Management (In Progress)
+- ⏳ Customer Inquiries
+- ⏳ Facebook Integration
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## 📞 Support
+
+For implementation details and troubleshooting, see `./CLAUDE.md`.

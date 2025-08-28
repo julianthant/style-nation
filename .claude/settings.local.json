@@ -3,9 +3,42 @@
     "allow": [
       "Bash(npx create-next-app:*)",
       "Bash(npx @nestjs/cli new:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(dir:*)",
+      "Bash(pnpm db:generate:*)",
+      "Bash(pnpm install:*)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__get_project",
+      "mcp__supabase__execute_sql",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__supabase__search_docs",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx shadcn add:*)",
+      "Bash(pkill:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_navigate",
+      "Bash(npm i:*)",
+      "Read(C:\\Users\\Julian\\Downloads/**)",
+      "WebSearch",
+      "mcp__playwright__browser_close",
+      "Bash(npm run dev:*)",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_wait_for",
+      "mcp__supabase__apply_migration",
+      "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart\\client\\src\\pages/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart/**)",
+      "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart\\client\\src\\pages/**)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\Users\\Julian\\Projects\\style-nation\\packages",
+      "C:\\c\\Users\\Julian\\Projects\\style-nation\\apps"
+    ]
   }
 }

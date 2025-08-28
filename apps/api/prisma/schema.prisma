@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Main entities - Style Nation Car Showroom Schema
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String    // Hashed password for authentication
+  role          Role      @default(USER)
+  profile       Profile?
+  inquiries     Inquiry[]
+  createdCars   Car[]     @relation("CreatedBy")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName String?
+  lastName  String?
+  phone     String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model Car {
+  id                String        @id @default(uuid())
+  make              String
+  model             String
+  year              Int
+  price             Decimal       @db.Decimal(10, 2)
+  mileage           Int?
+  vin               String        @unique
+  condition         Condition
+  transmissionType  Transmission
+  fuelType          FuelType
+  bodyType          BodyType
+  exteriorColor     String
+  interiorColor     String
+  engineSize        String?
+  features          String[]
+  description       String        @db.Text
+  images            CarImage[]
+  status            ListingStatus @default(AVAILABLE)
+  featuredUntil     DateTime?
+  facebookPostId    String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  createdBy         String
+  creator           User          @relation("CreatedBy", fields: [createdBy], references: [id])
+  inquiries         Inquiry[]
+  viewCount         Int           @default(0)
+
+  // Indexes for performance
+  @@index([status])
+  @@index([price])
+  @@index([make, model])
+  @@index([year])
+  @@index([createdAt(sort: Desc)])
+  @@map("cars")
+}
+
+model CarImage {
+  id        String   @id @default(uuid())
+  carId     String
+  car       Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean  @default(false)
+  order     Int
+  createdAt DateTime @default(now())
+
+  @@index([carId])
+  @@map("car_images")
+}
+
+model Inquiry {
+  id        String        @id @default(uuid())
+  carId     String
+  car       Car           @relation(fields: [carId], references: [id])
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id])
+  name      String
+  email     String
+  phone     String?
+  message   String        @db.Text
+  status    InquiryStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([carId])
+  @@index([status])
+  @@map("inquiries")
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Condition {
+  NEW
+  USED
+  CERTIFIED_PREOWNED
+}
+
+enum ListingStatus {
+  AVAILABLE
+  SOLD
+  RESERVED
+  INACTIVE
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+  CVT
+  DUAL_CLUTCH
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  ELECTRIC
+  HYBRID
+  PLUG_IN_HYBRID
+}
+
+enum BodyType {
+  SEDAN
+  SUV
+  TRUCK
+  COUPE
+  CONVERTIBLE
+  WAGON
+  VAN
+  HATCHBACK
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}

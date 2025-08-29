@@ -14,60 +14,56 @@ datasource db {
 // Main entities - Style Nation Car Showroom Schema
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  password      String    // Hashed password for authentication
-  role          Role      @default(USER)
-  profile       Profile?
-  inquiries     Inquiry[]
-  createdCars   Car[]     @relation("CreatedBy")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                  String @id @default(uuid())
+  name                String?
+  email               String @unique
+  emailVerified       Boolean @default(false)
+  image               String?
+  password            String
+  role                Role    @default(ADMIN) // Only ADMIN role needed - no public users
+  
+  // Security fields
+  failedLoginAttempts Int @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  refreshToken        String?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // Business Relations
+  createdCars         Car[]     @relation("CreatedBy")
 
   @@map("users")
 }
 
-model Profile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName String?
-  lastName  String?
-  phone     String?
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("profiles")
-}
-
 model Car {
-  id                String        @id @default(uuid())
-  make              String
-  model             String
-  year              Int
-  price             Decimal       @db.Decimal(10, 2)
-  mileage           Int?
-  vin               String        @unique
-  condition         Condition
-  transmissionType  Transmission
-  fuelType          FuelType
-  bodyType          BodyType
-  exteriorColor     String
-  interiorColor     String
-  engineSize        String?
-  features          String[]
-  description       String        @db.Text
-  images            CarImage[]
-  status            ListingStatus @default(AVAILABLE)
-  featuredUntil     DateTime?
-  facebookPostId    String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  createdBy         String
-  creator           User          @relation("CreatedBy", fields: [createdBy], references: [id])
-  inquiries         Inquiry[]
-  viewCount         Int           @default(0)
+  id               String        @id @default(uuid())
+  make             String
+  model            String
+  year             Int
+  price            Decimal       @db.Decimal(10, 2)
+  mileage          Int?
+  vin              String        @unique
+  condition        Condition
+  transmissionType Transmission
+  fuelType         FuelType
+  bodyType         BodyType
+  exteriorColor    String
+  interiorColor    String
+  engineSize       String?
+  features         String[]
+  description      String        @db.Text
+  images           CarImage[]
+  status           ListingStatus @default(AVAILABLE)
+  featuredUntil    DateTime?
+  facebookPostId   String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  createdBy        String
+  creator          User          @relation("CreatedBy", fields: [createdBy], references: [id])
+  inquiries        Inquiry[]
+  viewCount        Int           @default(0)
 
   // Indexes for performance
   @@index([status])
@@ -95,8 +91,6 @@ model Inquiry {
   id        String        @id @default(uuid())
   carId     String
   car       Car           @relation(fields: [carId], references: [id])
-  userId    String?
-  user      User?         @relation(fields: [userId], references: [id])
   name      String
   email     String
   phone     String?
@@ -112,7 +106,6 @@ model Inquiry {
 
 // Enums
 enum Role {
-  USER
   ADMIN
 }
 
@@ -160,3 +153,4 @@ enum InquiryStatus {
   CONTACTED
   CLOSED
 }
+

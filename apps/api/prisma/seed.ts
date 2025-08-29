@@ -3,51 +3,48 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-const roundsOfHashing = 10;
-
 async function main() {
   console.log('Seeding database...');
 
+  // Hash passwords for admin users
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const devPassword = await bcrypt.hash('dev123', 10);
+
   // Create admin user
-  const hashedAdminPassword = await bcrypt.hash('admin123', roundsOfHashing);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@stylenation.com' },
     update: {
-      password: hashedAdminPassword,
+      name: 'Admin User',
       role: 'ADMIN',
+      password: adminPassword,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
     },
     create: {
       email: 'admin@stylenation.com',
-      password: hashedAdminPassword,
+      name: 'Admin User',
+      password: adminPassword,
       role: 'ADMIN',
-      profile: {
-        create: {
-          firstName: 'Admin',
-          lastName: 'User',
-          phone: '+1-555-0100',
-        },
-      },
+      emailVerified: true,
     },
   });
 
-  // Create regular user
-  const hashedUserPassword = await bcrypt.hash('user123', roundsOfHashing);
-  const user = await prisma.user.upsert({
-    where: { email: 'john@example.com' },
+  // Create second admin user for development
+  const devAdmin = await prisma.user.upsert({
+    where: { email: 'dev@stylenation.com' },
     update: {
-      password: hashedUserPassword,
+      name: 'Dev Admin',
+      role: 'ADMIN',
+      password: devPassword,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
     },
     create: {
-      email: 'john@example.com',
-      password: hashedUserPassword,
-      role: 'USER',
-      profile: {
-        create: {
-          firstName: 'John',
-          lastName: 'Doe',
-          phone: '+1-555-0101',
-        },
-      },
+      email: 'dev@stylenation.com',
+      name: 'Dev Admin',
+      password: devPassword,
+      role: 'ADMIN',
+      emailVerified: true,
     },
   });
 
@@ -59,7 +56,7 @@ async function main() {
       make: 'Honda',
       model: 'Accord',
       year: 2023,
-      price: 28500.00,
+      price: 28500.0,
       mileage: 15000,
       vin: 'JM1BK32F781123456',
       condition: 'USED',
@@ -77,7 +74,8 @@ async function main() {
         'Cruise Control',
         'Heated Seats',
       ],
-      description: 'This 2023 Honda Accord is in excellent condition with low mileage. Features a reliable 2.0L engine and comes fully loaded with modern technology and comfort features.',
+      description:
+        'This 2023 Honda Accord is in excellent condition with low mileage. Features a reliable 2.0L engine and comes fully loaded with modern technology and comfort features.',
       status: 'AVAILABLE',
       featuredUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       createdBy: admin.id,
@@ -92,7 +90,7 @@ async function main() {
       make: 'BMW',
       model: '330i',
       year: 2022,
-      price: 42900.00,
+      price: 42900.0,
       mileage: 8500,
       vin: 'WBAXH5C55DD123456',
       condition: 'CERTIFIED_PREOWNED',
@@ -111,7 +109,8 @@ async function main() {
         'Keyless Entry',
         'LED Headlights',
       ],
-      description: 'Certified Pre-Owned BMW 330i with premium features and excellent performance. This luxury sedan combines comfort, technology, and driving dynamics.',
+      description:
+        'Certified Pre-Owned BMW 330i with premium features and excellent performance. This luxury sedan combines comfort, technology, and driving dynamics.',
       status: 'AVAILABLE',
       createdBy: admin.id,
       viewCount: 78,
@@ -125,7 +124,7 @@ async function main() {
       make: 'Subaru',
       model: 'Outback',
       year: 2024,
-      price: 35200.00,
+      price: 35200.0,
       mileage: 2500,
       vin: 'JF2SJADC6MH123456',
       condition: 'NEW',
@@ -143,7 +142,8 @@ async function main() {
         'Power Liftgate',
         'Blind Spot Monitoring',
       ],
-      description: 'Brand new 2024 Subaru Outback with legendary reliability and capability. Perfect for adventures with standard all-wheel drive and advanced safety features.',
+      description:
+        'Brand new 2024 Subaru Outback with legendary reliability and capability. Perfect for adventures with standard all-wheel drive and advanced safety features.',
       status: 'AVAILABLE',
       featuredUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
       createdBy: admin.id,
@@ -193,16 +193,16 @@ async function main() {
     ],
   });
 
-  // Create sample inquiries
+  // Create sample inquiries (no user accounts - just contact info)
   await prisma.inquiry.createMany({
     data: [
       {
         carId: car1.id,
-        userId: user.id,
         name: 'John Doe',
         email: 'john@example.com',
         phone: '+1-555-0101',
-        message: 'Hi, I\'m interested in this Honda Accord. Is it still available? Can we schedule a test drive?',
+        message:
+          "Hi, I'm interested in this Honda Accord. Is it still available? Can we schedule a test drive?",
         status: 'NEW',
       },
       {
@@ -210,7 +210,8 @@ async function main() {
         name: 'Jane Smith',
         email: 'jane.smith@email.com',
         phone: '+1-555-0102',
-        message: 'Hello! I\'d like more information about the BMW 330i. What\'s included in the certified pre-owned warranty?',
+        message:
+          "Hello! I'd like more information about the BMW 330i. What's included in the certified pre-owned warranty?",
         status: 'CONTACTED',
       },
       {
@@ -226,13 +227,13 @@ async function main() {
 
   console.log('Database seeded successfully!');
   console.log({
-    users: { admin, user },
+    users: { admin, devAdmin },
     cars: { car1, car2, car3 },
   });
 }
 
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error('Error seeding database:', e);
     process.exit(1);
   })

@@ -156,3 +156,36 @@ storybook-static
 
 # Turbo
 .turbo
+
+# Claude settings (local development only)
+.claude/settings.local.json
+
+# App-specific files
+apps/**/CLAUDE.md
+apps/**/TASKS.md
+apps/**/SUMMARY.md
+
+# Development documentation (project-level docs are tracked)
+PROMPT.txt
+
+# Backup and temporary files
+*.bak
+*.tmp
+*~
+
+# Generated TypeScript types
+**/types/generated/
+
+# Local storage and cache
+.cache/
+*.cache
+
+# Editor files
+*.sublime-*
+.vscode/settings.json
+.vscode/launch.json
+
+# Development uploads/images
+uploads/
+public/uploads/
+static/uploads/

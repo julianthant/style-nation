@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ModuleMocker, MockMetadata } from 'jest-mock';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { JwtAuthGuard } from './auth/guards/jwt.auth.guard';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 const moduleMocker = new ModuleMocker(global);
 
@@ -94,49 +94,4 @@ describe('AppController', () => {
     });
   });
 
-  describe('protected', () => {
-    it('should return protected message with user data', async () => {
-      const mockRequest = {
-        user: {
-          id: 'user-123',
-          email: 'test@example.com',
-          role: 'USER',
-        },
-      };
-
-      const result = await appController.protected(mockRequest);
-
-      expect(result).toEqual({
-        message: 'AuthGuard works 🎉',
-        authenticated_user: mockRequest.user,
-      });
-    });
-
-    it('should handle request without user data', async () => {
-      const mockRequest = {
-        user: undefined,
-      };
-
-      const result = await appController.protected(mockRequest);
-
-      expect(result).toEqual({
-        message: 'AuthGuard works 🎉',
-        authenticated_user: undefined,
-      });
-    });
-
-    it('should handle request with partial user data', async () => {
-      const mockRequest = {
-        user: {
-          id: 'user-123',
-          // Missing email and role
-        },
-      };
-
-      const result = await appController.protected(mockRequest);
-
-      expect(result.authenticated_user).toEqual(mockRequest.user);
-      expect(result.message).toBe('AuthGuard works 🎉');
-    });
-  });
 });

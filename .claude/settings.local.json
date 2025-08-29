@@ -32,7 +32,11 @@
       "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart/**)",
       "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart\\client\\src\\pages/**)",
       "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart/**)",
-      "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart\\client\\src\\pages/**)"
+      "Read(C:\\Users\\Julian\\Downloads\\AutoMart\\AutoMart\\client\\src\\pages/**)",
+      "Bash(git checkout:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(npx prisma migrate dev:*)"
     ],
     "deny": [],
     "ask": [],

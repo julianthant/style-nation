@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
-import { AuthProvider } from "@/components/providers/auth-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,10 +35,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            <AuthProvider>
-              {children}
-              <Toaster />
-            </AuthProvider>
+            {children}
+            <Toaster />
           </QueryProvider>
         </ThemeProvider>
       </body>

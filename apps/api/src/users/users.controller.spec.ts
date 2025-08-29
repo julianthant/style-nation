@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ModuleMocker, MockMetadata } from 'jest-mock';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { UserEntity } from './entities/user.entity';
+import { Role } from '@prisma/client';
+import { ModuleMocker } from 'jest-mock';
 import { JwtAuthGuard } from '../auth/guards/jwt.auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { Role } from '@prisma/client';
+
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserEntity } from './entities/user.entity';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
 
 const moduleMocker = new ModuleMocker(global);
 
@@ -18,28 +18,23 @@ describe('UsersController', () => {
 
   const mockUserEntity = new UserEntity({
     id: 'user-123',
+    supabaseId: 'supabase-user-123',
     email: 'test@example.com',
     role: Role.USER,
+    firstName: 'John',
+    lastName: 'Doe',
+    phone: '+1234567890',
+    avatar: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    profile: {
-      id: 'profile-123',
-      userId: 'user-123',
-      firstName: 'John',
-      lastName: 'Doe',
-      phone: '+1234567890',
-      avatar: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
   });
 
   const mockUsersService = {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    findBySupabaseId: jest.fn(),
     update: jest.fn(),
-    changePassword: jest.fn(),
     remove: jest.fn(),
   };
 
@@ -73,8 +68,8 @@ describe('UsersController', () => {
 
   describe('create', () => {
     const createUserDto: CreateUserDto = {
+      supabaseId: 'supabase-user-123',
       email: 'test@example.com',
-      password: 'password123',
       role: Role.USER,
       firstName: 'John',
       lastName: 'Doe',
@@ -99,8 +94,8 @@ describe('UsersController', () => {
 
   describe('register', () => {
     const registerDto: CreateUserDto = {
+      supabaseId: 'supabase-new-user',
       email: 'newuser@example.com',
-      password: 'password123',
       firstName: 'New',
       lastName: 'User',
     };
@@ -108,7 +103,7 @@ describe('UsersController', () => {
     it('should register a user with USER role regardless of provided role', async () => {
       const dtoWithAdminRole = { ...registerDto, role: Role.ADMIN };
       const expectedServiceCall = { ...dtoWithAdminRole, role: Role.USER };
-      
+
       mockUsersService.create.mockResolvedValue(mockUserEntity);
 
       const result = await controller.register(dtoWithAdminRole);
@@ -172,11 +167,8 @@ describe('UsersController', () => {
     it('should update current user profile', async () => {
       const updatedUser = new UserEntity({
         ...mockUserEntity,
-        profile: {
-          ...mockUserEntity.profile,
-          firstName: 'Updated',
-          lastName: 'Name',
-        },
+        firstName: 'Updated',
+        lastName: 'Name',
       });
 
       mockUsersService.update.mockResolvedValue(updatedUser);
@@ -206,34 +198,6 @@ describe('UsersController', () => {
 
       expect(result).toEqual(updatedUser);
       expect(usersService.update).toHaveBeenCalledWith('user-123', updateDto);
-    });
-  });
-
-  describe('changePassword', () => {
-    const currentUser = { id: 'user-123' };
-    const changePasswordDto: ChangePasswordDto = {
-      currentPassword: 'current123',
-      newPassword: 'newpassword456',
-    };
-
-    it('should change password successfully', async () => {
-      mockUsersService.changePassword.mockResolvedValue(undefined);
-
-      await controller.changePassword(currentUser, changePasswordDto);
-
-      expect(usersService.changePassword).toHaveBeenCalledWith(
-        currentUser.id,
-        changePasswordDto,
-      );
-    });
-
-    it('should handle service errors appropriately', async () => {
-      const error = new Error('Service error');
-      mockUsersService.changePassword.mockRejectedValue(error);
-
-      await expect(
-        controller.changePassword(currentUser, changePasswordDto),
-      ).rejects.toThrow(error);
     });
   });
 

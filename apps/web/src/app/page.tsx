@@ -1,89 +1,48 @@
-'use client';
-
 import { BrowseByType } from '@/components/home/browse-by-type';
 import { CTASections } from '@/components/home/cta-sections';
-import { HeroSection } from '@/components/home/hero-section';
 import { OnlineEverywhereSection } from '@/components/home/online-everywhere';
 import { VehicleShowcase } from '@/components/home/vehicle-showcase';
 import { Footer } from '@/components/layout/footer';
-import { MainHeader } from '@/components/layout/main-header';
-import { useRouter } from 'next/navigation';
+import { AdaptiveHeader } from '@/components/adaptive/adaptive-header';
+import { AdaptiveHero } from '@/components/adaptive/adaptive-hero';
+import { HomePageClient } from '@/components/home/home-page-client';
+import { carsAPI, SortBy } from '@/lib/api/cars';
+import type { Car } from '@/lib/types/car';
 
-export default function Home() {
-  const router = useRouter();
+// Server-side data fetching
+async function getHomePageData() {
+  try {
+    // Fetch data in parallel for better performance
+    const [featuredCars, recentCars, popularCars, popularMakes] = await Promise.all([
+      carsAPI.getFeaturedCars(8),
+      carsAPI.getCars({ limit: 8, sortBy: SortBy.NEWEST }),
+      carsAPI.getCars({ limit: 8, sortBy: SortBy.PRICE_DESC }),
+      carsAPI.getPopularMakes(10),
+    ]);
 
-  // Handler functions with proper Next.js navigation
-  const handleSearch = (filters: any) => {
-    console.log('Search filters:', filters);
-    // Navigate to cars page with search filters
-    const params = new URLSearchParams();
-    Object.keys(filters).forEach(key => {
-      if (filters[key]) {
-        params.set(key, filters[key]);
-      }
-    });
-    router.push(`/cars?${params.toString()}`);
-  };
+    return {
+      featuredCars: featuredCars || [],
+      recentCars: recentCars?.cars || [],
+      popularCars: popularCars?.cars || [],
+      popularMakes: popularMakes || [],
+      success: true,
+    };
+  } catch (error) {
+    console.error('Failed to fetch homepage data:', error);
+    // Return empty data but don't throw - let client components handle the API calls
+    return {
+      featuredCars: [],
+      recentCars: [],
+      popularCars: [],
+      popularMakes: [],
+      success: false,
+    };
+  }
+}
 
-  const handleViewAllVehicles = () => {
-    router.push('/cars');
-  };
+export default async function Home() {
+  // Fetch data server-side
+  const homePageData = await getHomePageData();
 
-  const handleVehicleClick = (id: string) => {
-    router.push(`/cars/${id}`);
-  };
-
-  const handleBookmark = (id: string) => {
-    console.log('Bookmark vehicle:', id);
-    // TODO: Implement bookmark functionality with state management
-  };
-
-  const handleViewAllTypes = () => {
-    router.push('/cars');
-  };
-
-  const handleTypeClick = (type: string) => {
-    router.push(`/cars?type=${type.toLowerCase()}`);
-  };
-
-  const handleBuyCarClick = () => {
-    router.push('/cars');
-  };
-
-  const handleSellCarClick = () => {
-    router.push('/contact');
-  };
-
-  const handleGetStarted = () => {
-    router.push('/cars');
-  };
-
-  return (
-    <div className="bg-background min-h-screen">
-      {/* Hero Section with integrated header */}
-      <div className="relative">
-        <MainHeader variant="hero" />
-        <HeroSection onSearch={handleSearch} />
-      </div>
-
-      {/* Vehicle Showcase Section */}
-      <VehicleShowcase
-        onViewAll={handleViewAllVehicles}
-        onVehicleClick={handleVehicleClick}
-        onBookmark={handleBookmark}
-      />
-
-      {/* Browse by Type Section */}
-      <BrowseByType onViewAll={handleViewAllTypes} onTypeClick={handleTypeClick} />
-
-      {/* Call-to-Action Sections */}
-      <CTASections onBuyCarClick={handleBuyCarClick} onSellCarClick={handleSellCarClick} />
-
-      {/* Online Everywhere Section */}
-      <OnlineEverywhereSection onGetStarted={handleGetStarted} />
-
-      {/* Footer */}
-      <Footer />
-    </div>
-  );
+  return <HomePageClient initialData={homePageData} />;
 }

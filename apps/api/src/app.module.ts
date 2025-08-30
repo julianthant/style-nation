@@ -4,13 +4,17 @@ import { APP_PIPE, APP_GUARD } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppController } from './controllers/app.controller';
+import { AppService } from './services/app.service';
+import { AuthModule } from './modules/auth.module';
+import { AdminModule } from './modules/admin.module';
+import { CarsModule } from './modules/cars.module';
+import { UploadModule } from './modules/upload.module';
+import { InquiriesModule } from './modules/inquiries.module';
+import { ContactModule } from './modules/contact.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { UsersModule } from './users/users.module';
-import { CarsModule } from './cars/cars.module';
-import { AuthModule } from './auth/auth.module';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { StorageModule } from './storage/storage.module';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -22,14 +26,17 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
       limit: 100, // 100 requests per minute globally
     }]),
     PrismaModule,
+    StorageModule,
     AuthModule,
-    UsersModule,
+    AdminModule,
     CarsModule,
-    // Other modules will be added here as we create them
-    // InquiriesModule,
-    // FacebookModule,
+    UploadModule,
+    InquiriesModule,
+    ContactModule,
   ],
-  controllers: [AppController],
+  controllers: [
+    AppController,
+  ],
   providers: [
     AppService,
     {

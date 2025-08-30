@@ -1,120 +1,199 @@
 # Product Requirements Document
 
-## Car Showroom Web Application
+## Car Showroom Multi-App Platform
 
 ### 1. Executive Summary
 
 #### 1.1 Product Overview
 
-A modern web application for car showrooms to showcase their vehicle inventory with dual interfaces for administrators and customers. The platform features real-time inventory management with automatic social media integration for marketing purposes.
+A comprehensive car dealership platform consisting of three distinct applications: a public-facing car showroom website for browsing inventory, an admin dashboard for dealership management, and a centralized API backend. The platform eliminates user registration complexity while providing powerful administrative tools and automated social media marketing.
 
 #### 1.2 Business Objectives
 
-- Digital transformation of traditional car showroom operations
-- Automated marketing through Facebook integration
-- Improved customer engagement through modern web interface
-- Streamlined inventory management for administrators
+- **Simplified Customer Experience**: Public car browsing without registration barriers
+- **Streamlined Operations**: Dedicated admin tools for efficient inventory management
+- **Automated Marketing**: Facebook integration for automated car listing promotion
+- **Analytics-Driven Decisions**: Comprehensive analytics for business insights
+- **Scalable Architecture**: Separate concerns with independent deployment capabilities
 
 #### 1.3 Success Metrics
 
-- Time reduction in listing management (target: 50% reduction)
-- Increase in customer inquiries through digital channels
-- Facebook engagement rate on automated posts
-- System uptime (target: 99.9%)
+- **Operational Efficiency**: 50% reduction in car listing management time
+- **Customer Engagement**: 3x increase in customer inquiries vs. traditional methods  
+- **Marketing Reach**: 80% of new car listings automatically posted to Facebook
+- **User Experience**: <3 second page load times for public car browsing
+- **System Reliability**: 99.9% uptime across all three applications
+- **Conversion Rate**: 15% inquiry-to-sale conversion rate tracking
 
 ---
 
 ### 2. Technical Architecture
 
-#### 2.1 Technology Stack
+#### 2.1 Three-Application Architecture
 
-**Frontend:**
+**1. Public Web App (Customer-Facing)**
+- **Framework**: Next.js 15.5 (App Router)
+- **Purpose**: Public car browsing, no authentication required
+- **Features**: Car listings, detailed views, contact forms, company info
+- **URL**: https://stylenation.com
 
-- Framework: Next.js 14+ (App Router)
-- Language: TypeScript
-- Styling: Tailwind CSS
-- State Management: Zustand or Context API
-- Image Optimization: Next.js Image component with Cloudinary
+**2. Admin Dashboard (Management Interface)**
+- **Framework**: Next.js 15.5 (App Router) 
+- **Purpose**: Dealership management and analytics
+- **Features**: Car CRUD, analytics, inquiries, Facebook integration
+- **Authentication**: JWT-based admin login only
+- **URL**: https://admin.stylenation.com
 
-**Backend:**
+**3. Backend API (Centralized Services)**
+- **Framework**: NestJS with TypeScript
+- **Purpose**: Shared backend for both applications
+- **Authentication**: Mixed (public endpoints + JWT for admin)
+- **URL**: https://api.stylenation.com
 
-- Framework: NestJS
-- Language: TypeScript (Note: NestJS runs on Node.js, not Python)
-- ORM: Prisma
-- API: RESTful with potential GraphQL consideration
+#### 2.2 Technology Stack
 
-**Infrastructure:**
+**Web App (Public Frontend)**
+- Framework: Next.js 15.5 (App Router)
+- Language: TypeScript (strict mode)
+- Styling: Tailwind CSS + shadcn/ui
+- Authentication: None (public access only)
+- Data Fetching: Server-side rendering + client-side API calls
+- Image Optimization: Next.js Image component
 
-- Database: Supabase (PostgreSQL)
-- Authentication: Supabase Auth
-- File Storage: Supabase Storage
-- Hosting: Vercel (Frontend), Vercel Functions
+**Admin App (Management Dashboard)**
+- Framework: Next.js 15.5 (App Router)
+- Language: TypeScript (strict mode)
+- Styling: Tailwind CSS + shadcn/ui + admin components
+- Authentication: JWT with secure token storage
+- State Management: React Query + Zustand
+- Forms: React Hook Form with Zod validation
+- Tables: TanStack Table for data management
+- Charts: Recharts for analytics visualization
+
+**Backend API**
+- Framework: NestJS with TypeScript
+- Authentication: JWT for admin endpoints, public endpoints for web
+- ORM: Prisma with PostgreSQL
+- API: RESTful with OpenAPI/Swagger documentation
+- Security: JWT validation, CORS, helmet, rate limiting
+
+**Infrastructure**
+- Database: Supabase PostgreSQL
+- File Storage: Supabase Storage for car images
+- Hosting: Vercel (all three applications)
 - CDN: Vercel Edge Network
+- SSL: Automatic HTTPS via Vercel
 
-**Third-party Integrations:**
+**Third-party Integrations**
+- Facebook Graph API for automated posting
+- Google Analytics 4 for web analytics
+- Email service for inquiry notifications (optional)
 
-- Facebook Graph API
-- Analytics: Google Analytics 4 / Vercel Analytics
-- Error Tracking: Sentry
-
-#### 2.2 System Architecture Diagram
+#### 2.3 System Architecture Diagram
 
 ```
-┌─────────────────┐     ┌─────────────────┐
-│   Next.js App   │────▶│  NestJS API     │
-│   (Vercel)      │     │  (Vercel/Railway)│
-└─────────────────┘     └─────────────────┘
-         │                       │
-         │                       ▼
-         │              ┌─────────────────┐
-         │              │   Prisma ORM    │
-         │              └─────────────────┘
-         │                       │
-         ▼                       ▼
-┌─────────────────┐     ┌─────────────────┐
-│  Supabase Auth  │     │ Supabase DB     │
-└─────────────────┘     │  (PostgreSQL)   │
-                        └─────────────────┘
-                                 │
-                        ┌────────▼────────┐
-                        │  Facebook API   │
-                        └─────────────────┘
+┌─────────────────────┐    ┌─────────────────────┐
+│   Public Web App    │    │   Admin Dashboard   │
+│   (Next.js)         │    │   (Next.js)         │
+│   stylenation.com   │    │   admin.stylenation │
+└─────────────────────┘    └─────────────────────┘
+           │                          │
+           │ Public API Calls         │ Admin API Calls (JWT)
+           │                          │
+           └──────────┐      ┌─────────┘
+                      │      │
+                      ▼      ▼
+            ┌─────────────────────────┐
+            │    NestJS Backend API   │
+            │   api.stylenation.com   │
+            │  ┌─────────────────────┐│
+            │  │  Public Endpoints   ││  ← No Auth Required
+            │  │  • GET /cars        ││
+            │  │  • POST /inquiries  ││
+            │  │  • GET /health      ││
+            │  └─────────────────────┘│
+            │  ┌─────────────────────┐│
+            │  │  Admin Endpoints    ││  ← JWT Required
+            │  │  • POST /admin/cars ││
+            │  │  • GET /analytics   ││
+            │  │  • Facebook APIs    ││
+            │  └─────────────────────┘│
+            └─────────────────────────┘
+                      │
+                      ▼
+            ┌─────────────────────────┐
+            │     Supabase DB         │
+            │     (PostgreSQL)        │
+            │   + File Storage        │
+            └─────────────────────────┘
+                      │
+                      ▼
+            ┌─────────────────────────┐
+            │    Facebook Graph API   │
+            │  (Auto-posting Cars)    │
+            └─────────────────────────┘
 ```
 
 ---
 
 ### 3. User Roles & Permissions
 
-#### 3.1 Admin Role
+#### 3.1 Public Users (Web App)
+
+**Access Level:** No authentication required
 
 **Capabilities:**
+- Browse all available car inventory
+- Advanced search and filtering
+- View detailed car information with image galleries
+- Submit car inquiries via contact forms
+- Access company information and contact details
+- Share car listings on social media
+- Responsive browsing on all devices
 
+**Restrictions:**
+- No account creation or login
+- No saved favorites or personal data storage
+- No administrative capabilities
+- Cannot access sold or inactive car listings
+
+#### 3.2 Admin Users (Admin Dashboard)
+
+**Access Level:** JWT-based authentication required
+
+**Core Capabilities:**
 - Full CRUD operations on car listings
-- Manage media assets (images/videos)
-- Configure Facebook integration settings
-- View analytics dashboard
-- Manage user inquiries
-- Export data and reports
-- System settings management
+- Advanced car management with bulk operations
+- Upload and manage car images with drag-and-drop
+- View comprehensive analytics dashboard
+- Manage customer inquiries and responses
+- Export data and generate reports
+
+**Facebook Integration:**
+- Configure Facebook page integration
+- Automated car posting to Facebook
+- Manage Facebook post templates
+- View Facebook post performance analytics
+- Manual posting and scheduling
+
+**System Management:**
+- Create and manage other admin accounts
+- Configure system settings and preferences
+- View system logs and audit trails
+- Manage Facebook integration settings
+- Export/import data
+
+**Security Features:**
+- JWT token-based authentication
+- Secure session management
+- Activity logging for audit purposes
+- Role-based permission enforcement
 
 **Access Control:**
-
-- Protected routes with role-based middleware
-- Session timeout after 2 hours of inactivity
-- Two-factor authentication (optional but recommended)
-
-#### 3.2 User Role (Customer)
-
-**Capabilities:**
-
-- Browse car inventory
-- Advanced search and filtering
-- View detailed car information
-- Save favorites/wishlist
-- Submit inquiries
-- Schedule test drives
-- Compare vehicles
-- Share listings on social media
+- Session timeout after 4 hours of inactivity
+- Secure token storage with automatic refresh
+- Protected routes with authentication middleware
+- Admin-only API endpoint access
 
 ---
 
@@ -413,44 +492,87 @@ enum ListingStatus {
 
 ---
 
-### 7. API Endpoints
+### 7. API Endpoints Architecture
 
-#### Core Endpoints
+#### 7.1 Public Endpoints (No Authentication Required)
 
+**Car Browsing (For Web App)**
 ```
-Authentication:
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/logout
-POST   /api/auth/refresh
-POST   /api/auth/forgot-password
+GET    /api/cars                    # List available cars with pagination/filters
+GET    /api/cars/featured           # Get featured cars for homepage
+GET    /api/cars/:id                # Get individual car details
+GET    /api/cars/:id/images         # Get car image gallery
+```
 
-Cars:
-GET    /api/cars                 (public, paginated)
-GET    /api/cars/:id            (public)
-POST   /api/cars                (admin only)
-PUT    /api/cars/:id            (admin only)
-DELETE /api/cars/:id            (admin only)
-POST   /api/cars/:id/images     (admin only)
-DELETE /api/cars/:id/images/:imageId (admin only)
+**Contact & Inquiries (For Web App)**
+```
+POST   /api/inquiries               # Submit car inquiry from web
+POST   /api/contact                 # General contact form submission
+```
 
-Search:
-GET    /api/search               (public)
-GET    /api/filters/options      (public)
+**System Health**
+```
+GET    /api/health                  # API health check
+```
 
-Facebook:
-POST   /api/facebook/post/:carId (admin only)
-GET    /api/facebook/status/:carId (admin only)
-DELETE /api/facebook/post/:postId (admin only)
+#### 7.2 Admin Endpoints (JWT Authentication Required)
 
-Inquiries:
-POST   /api/inquiries            (public)
-GET    /api/inquiries            (admin only)
-PUT    /api/inquiries/:id       (admin only)
+**Authentication**
+```
+POST   /api/auth/login              # Admin login only (no registration)
+POST   /api/auth/refresh            # Refresh JWT token
+GET    /api/auth/profile            # Get current admin profile
+POST   /api/auth/logout             # Logout admin
+```
 
-Analytics:
-GET    /api/analytics/dashboard  (admin only)
-GET    /api/analytics/cars/:id  (admin only)
+**Car Management (Admin Dashboard)**
+```
+GET    /api/admin/cars              # List all cars (including sold/inactive)
+POST   /api/admin/cars              # Create new car listing
+GET    /api/admin/cars/:id          # Get car details for editing
+PATCH  /api/admin/cars/:id          # Update car listing
+DELETE /api/admin/cars/:id          # Delete car listing
+POST   /api/admin/cars/:id/images   # Upload car images
+DELETE /api/admin/cars/:id/images/:imageId  # Delete specific image
+PATCH  /api/admin/cars/bulk          # Bulk update cars
+DELETE /api/admin/cars/bulk          # Bulk delete cars
+```
+
+**Inquiry Management (Admin Dashboard)**
+```
+GET    /api/admin/inquiries         # List all customer inquiries
+GET    /api/admin/inquiries/:id     # Get inquiry details
+PATCH  /api/admin/inquiries/:id     # Update inquiry status/response
+DELETE /api/admin/inquiries/:id     # Delete inquiry
+```
+
+**Analytics & Reporting (Admin Dashboard)**
+```
+GET    /api/admin/analytics/overview       # Dashboard KPI metrics
+GET    /api/admin/analytics/cars/views     # Car view analytics
+GET    /api/admin/analytics/inquiries      # Inquiry trends
+GET    /api/admin/analytics/popular-cars   # Most viewed cars
+GET    /api/admin/analytics/sales          # Sales performance
+```
+
+**Admin User Management**
+```
+GET    /api/admin/users             # List admin users
+POST   /api/admin/users             # Create new admin user
+GET    /api/admin/users/:id         # Get admin user details
+PATCH  /api/admin/users/:id         # Update admin user
+DELETE /api/admin/users/:id         # Delete admin user
+POST   /api/admin/change-password   # Change admin password
+```
+
+**Facebook Integration (Admin Dashboard)**
+```
+POST   /api/admin/facebook/post/:carId        # Post car to Facebook
+GET    /api/admin/facebook/posts              # List Facebook post history
+DELETE /api/admin/facebook/post/:postId       # Delete Facebook post
+GET    /api/admin/facebook/settings           # Get Facebook settings
+PATCH  /api/admin/facebook/settings           # Update Facebook settings
+POST   /api/admin/facebook/test-connection    # Test Facebook connection
 ```
 
 ---

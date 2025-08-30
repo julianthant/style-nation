@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { DeviceProvider } from "@/components/adaptive/device-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -35,8 +36,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            {children}
-            <Toaster />
+            <DeviceProvider>
+              {children}
+              <Toaster />
+            </DeviceProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

@@ -1,38 +1,28 @@
-// Global test setup file
-import { config } from 'dotenv';
+// Test setup file for Jest
+// Using CommonJS syntax since ts-jest handles TypeScript compilation
 
-// Load test environment variables
-config({ path: '.env.test' });
+// Global test timeout (10 seconds)
+jest.setTimeout(10000);
 
-// Set test timeout for all tests
-jest.setTimeout(30000);
+// Mock environment variables for testing
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.JWT_EXPIRES_IN = '1h';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
 
-// Global test configuration
-beforeAll(async () => {
-  // Setup global test configuration if needed
-});
+// Global test utilities
+global.console = {
+  ...console,
+  // Uncomment to silence console output during tests
+  // log: jest.fn(),
+  // warn: jest.fn(),
+  // error: jest.fn(),
+  debug: jest.fn(),
+  info: jest.fn(),
+};
 
-afterAll(async () => {
-  // Global cleanup if needed
-});
-
-// Mock external services that shouldn't be called during testing
-jest.mock('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => ({
-    auth: {
-      getUser: jest.fn(),
-      signInWithPassword: jest.fn(),
-      signOut: jest.fn(),
-    },
-  })),
-}));
-
-// Console log suppression for cleaner test output
-const originalConsoleError = console.error;
+// Setup global mocks if needed
 beforeEach(() => {
-  console.error = jest.fn();
-});
-
-afterEach(() => {
-  console.error = originalConsoleError;
+  // Reset all mocks before each test
+  jest.clearAllMocks();
 });

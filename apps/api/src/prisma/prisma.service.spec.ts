@@ -20,8 +20,10 @@ describe('PrismaService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should extend PrismaClient', () => {
-    expect(service).toBeInstanceOf(PrismaService);
+  it('should be defined and have prisma methods', () => {
+    expect(service).toBeDefined();
+    expect(service.$connect).toBeDefined();
+    expect(service.$disconnect).toBeDefined();
   });
 
   describe('onModuleInit', () => {
@@ -46,20 +48,15 @@ describe('PrismaService', () => {
   });
 
   describe('database models', () => {
-    it('should have user model available', () => {
-      expect(service.user).toBeDefined();
-      expect(service.user.create).toBeDefined();
-      expect(service.user.findMany).toBeDefined();
-      expect(service.user.findUnique).toBeDefined();
-      expect(service.user.update).toBeDefined();
-      expect(service.user.delete).toBeDefined();
+    it('should have admin model available', () => {
+      expect(service.admin).toBeDefined();
+      expect(service.admin.create).toBeDefined();
+      expect(service.admin.findMany).toBeDefined();
+      expect(service.admin.findUnique).toBeDefined();
+      expect(service.admin.update).toBeDefined();
+      expect(service.admin.delete).toBeDefined();
     });
 
-    it('should have profile model available', () => {
-      expect(service.profile).toBeDefined();
-      expect(service.profile.create).toBeDefined();
-      expect(service.profile.findMany).toBeDefined();
-    });
 
     it('should have car model available', () => {
       expect(service.car).toBeDefined();

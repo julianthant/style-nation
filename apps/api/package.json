@@ -88,20 +88,27 @@
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
+    "preset": "ts-jest",
     "moduleFileExtensions": [
       "js",
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "src/**/*.(t|j)s",
+      "!src/**/*.spec.ts",
+      "!src/**/*.e2e-spec.ts",
+      "!src/**/*.interface.ts",
+      "!src/**/*.dto.ts",
+      "!src/**/*.entity.ts",
+      "!src/main.ts"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "coverage",
     "testEnvironment": "node",
     "coverageReporters": [
       "text",
@@ -118,15 +125,40 @@
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/dist/",
-      "/test/"
+      "/dist/"
     ],
     "setupFilesAfterEnv": [
-      "<rootDir>/../test/setup.ts"
+      "<rootDir>/test/setup.ts"
     ],
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/$1"
+      "^@/(.*)$": "<rootDir>/src/$1",
+      "^src/(.*)$": "<rootDir>/src/$1"
     },
-    "verbose": true
+    "testTimeout": 10000,
+    "verbose": true,
+    "projects": [
+      {
+        "preset": "ts-jest",
+        "displayName": "unit",
+        "testEnvironment": "node",
+        "testMatch": ["<rootDir>/test/unit/**/*.spec.ts", "<rootDir>/src/**/*.spec.ts"],
+        "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
+        "moduleNameMapper": {
+          "^@/(.*)$": "<rootDir>/src/$1",
+          "^src/(.*)$": "<rootDir>/src/$1"
+        }
+      },
+      {
+        "preset": "ts-jest",
+        "displayName": "e2e",
+        "testEnvironment": "node",
+        "testMatch": ["<rootDir>/test/e2e/**/*.e2e-spec.ts"],
+        "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
+        "moduleNameMapper": {
+          "^@/(.*)$": "<rootDir>/src/$1",
+          "^src/(.*)$": "<rootDir>/src/$1"
+        }
+      }
+    ]
   }
 }

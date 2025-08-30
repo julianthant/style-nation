@@ -1,0 +1,2 @@
+# Adaptive Wrapper Components
+This directory contains wrapper components that automatically render mobile or desktop versions based on device detection.

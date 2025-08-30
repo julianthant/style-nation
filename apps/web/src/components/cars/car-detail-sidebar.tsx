@@ -2,20 +2,16 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { 
   Phone, 
-  Mail, 
-  MessageCircle, 
   Share2, 
   Heart,
   Calendar,
   CheckCircle,
   User
 } from 'lucide-react'
+import { InquiryForm } from '@/components/forms/inquiry-form'
 import { Car } from '@/lib/types/car'
 import { formatPrice } from '@/lib/utils/placeholder'
 
@@ -25,12 +21,6 @@ interface CarDetailSidebarProps {
 
 export function CarDetailSidebar({ car }: CarDetailSidebarProps) {
   const [isBookmarked, setIsBookmarked] = useState(false)
-  const [inquiryForm, setInquiryForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: `Hi, I'm interested in the ${car.year} ${car.make} ${car.model}. Please contact me with more information.`
-  })
 
   const handleBookmark = () => {
     setIsBookmarked(!isBookmarked)
@@ -50,10 +40,10 @@ export function CarDetailSidebar({ car }: CarDetailSidebarProps) {
     }
   }
 
-  const handleInquirySubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // TODO: Submit inquiry
-    console.log('Inquiry submitted:', inquiryForm)
+  const handleInquirySuccess = () => {
+    // Optional: Add any additional logic when inquiry is successfully submitted
+    console.log('Inquiry submitted successfully for car:', car.id)
+    // Could show a toast notification or redirect
   }
 
   const handleScheduleViewing = () => {
@@ -125,73 +115,13 @@ export function CarDetailSidebar({ car }: CarDetailSidebarProps) {
         </div>
       </Card>
 
-      {/* Contact Form */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Send Inquiry
-          </h3>
-          
-          <form onSubmit={handleInquirySubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Your full name"
-                value={inquiryForm.name}
-                onChange={(e) => setInquiryForm(prev => ({ ...prev, name: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your.email@example.com"
-                value={inquiryForm.email}
-                onChange={(e) => setInquiryForm(prev => ({ ...prev, email: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number (Optional)</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                value={inquiryForm.phone}
-                onChange={(e) => setInquiryForm(prev => ({ ...prev, phone: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                placeholder="Tell us about your interest in this vehicle..."
-                value={inquiryForm.message}
-                onChange={(e) => setInquiryForm(prev => ({ ...prev, message: e.target.value }))}
-                rows={4}
-                required
-              />
-            </div>
-
-            <Button type="submit" className="w-full">
-              <Mail className="h-4 w-4 mr-2" />
-              Send Inquiry
-            </Button>
-          </form>
-
-          <p className="text-xs text-muted-foreground">
-            By submitting this form, you agree to be contacted by our sales team regarding this vehicle.
-          </p>
-        </div>
-      </Card>
+      {/* Contact Form - Using InquiryForm Component */}
+      <InquiryForm 
+        car={car}
+        onSuccess={handleInquirySuccess}
+        compact={true}
+        className="shadow-sm"
+      />
 
       {/* Dealer Information */}
       <Card className="p-6">

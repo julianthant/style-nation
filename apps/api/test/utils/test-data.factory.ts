@@ -1,167 +1,136 @@
-import { Role } from '@prisma/client';
-
-export interface TestUser {
-  id: string;
-  email: string;
-  password: string;
-  role: Role;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface TestProfile {
-  id: string;
-  userId: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  phone?: string | null;
-  avatar?: string | null;
-}
-
-export interface TestUserWithProfile extends TestUser {
-  profile: TestProfile;
-}
+import { Role, User, Car, ListingStatus, Condition, Transmission, FuelType, BodyType } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 export class TestDataFactory {
-  /**
-   * Create a basic test user
-   */
-  static createUser(overrides?: Partial<TestUser>): TestUser {
-    const now = new Date();
+  // User factory methods
+  static createUser(overrides?: Partial<User>): User {
     return {
       id: 'test-user-id',
+      name: 'Test User',
       email: 'test@example.com',
+      emailVerified: false,
+      image: null,
       password: 'hashed-password',
-      role: Role.USER,
-      createdAt: now,
-      updatedAt: now,
+      role: Role.ADMIN,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      lastLoginAt: null,
+      refreshToken: null,
+      createdAt: new Date('2023-01-01'),
+      updatedAt: new Date('2023-01-01'),
       ...overrides,
     };
   }
 
-  /**
-   * Create an admin test user
-   */
-  static createAdminUser(overrides?: Partial<TestUser>): TestUser {
-    return this.createUser({
+  static createAdminUser(overrides?: Partial<User>): User {
+    return TestDataFactory.createUser({
       id: 'admin-user-id',
-      email: 'admin@example.com',
+      email: 'admin@stylenation.com',
+      name: 'Admin User',
       role: Role.ADMIN,
       ...overrides,
     });
   }
 
-  /**
-   * Create a test profile
-   */
-  static createProfile(overrides?: Partial<TestProfile>): TestProfile {
+  static async createUserWithHashedPassword(password: string = 'password123', overrides?: Partial<User>): Promise<User> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    return TestDataFactory.createUser({
+      password: hashedPassword,
+      ...overrides,
+    });
+  }
+
+  // Car factory methods
+  static createCar(overrides?: Partial<Car>): Car {
     return {
-      id: 'test-profile-id',
-      userId: 'test-user-id',
-      firstName: 'John',
-      lastName: 'Doe',
-      phone: '+1234567890',
-      avatar: null,
+      id: 'test-car-id',
+      make: 'Toyota',
+      model: 'Camry',
+      year: 2023,
+      price: 25000,
+      mileage: 15000,
+      vin: 'TEST123456789VIN',
+      condition: Condition.USED,
+      transmissionType: Transmission.AUTOMATIC,
+      fuelType: FuelType.GASOLINE,
+      bodyType: BodyType.SEDAN,
+      exteriorColor: 'Silver',
+      interiorColor: 'Black',
+      engineSize: '2.5L',
+      features: ['Air Conditioning', 'Power Steering'],
+      description: 'Test car description',
+      status: ListingStatus.AVAILABLE,
+      featuredUntil: null,
+      facebookPostId: null,
+      createdAt: new Date('2023-01-01'),
+      updatedAt: new Date('2023-01-01'),
+      createdBy: 'test-user-id',
+      viewCount: 0,
       ...overrides,
     };
   }
 
-  /**
-   * Create a user with profile
-   */
-  static createUserWithProfile(
-    userOverrides?: Partial<TestUser>,
-    profileOverrides?: Partial<TestProfile>,
-  ): TestUserWithProfile {
-    const user = this.createUser(userOverrides);
-    const profile = this.createProfile({
-      userId: user.id,
-      ...profileOverrides,
+  static createFeaturedCar(overrides?: Partial<Car>): Car {
+    const featuredUntil = new Date();
+    featuredUntil.setDate(featuredUntil.getDate() + 30);
+    
+    return TestDataFactory.createCar({
+      featuredUntil,
+      ...overrides,
     });
-
-    return {
-      ...user,
-      profile,
-    };
   }
 
-  /**
-   * Create multiple test users
-   */
-  static createUsers(count: number): TestUser[] {
-    return Array.from({ length: count }, (_, index) =>
-      this.createUser({
-        id: `test-user-${index + 1}`,
-        email: `user${index + 1}@example.com`,
-      }),
-    );
-  }
-
-  /**
-   * Create test data for authentication tests
-   */
-  static createAuthTestData() {
-    return {
-      validCredentials: {
-        email: 'admin@stylenation.com',
-        password: 'admin123',
-      },
-      invalidCredentials: {
-        email: 'invalid@example.com',
-        password: 'wrongpassword',
-      },
-      newUserData: {
-        email: 'newuser@example.com',
-        password: 'password123',
-        firstName: 'New',
-        lastName: 'User',
-        phone: '+1555000123',
-      },
-    };
-  }
-
-  /**
-   * Create JWT payload for testing
-   */
+  // JWT payload factory
   static createJwtPayload(overrides?: any) {
     return {
       sub: 'test-user-id',
       email: 'test@example.com',
-      role: Role.USER,
+      role: Role.ADMIN,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, // 7 days
+      exp: Math.floor(Date.now() / 1000) + 3600,
       ...overrides,
     };
   }
 
-  /**
-   * Create mock Prisma user response
-   */
-  static createPrismaUser(withProfile = true, overrides?: any) {
-    const user = {
-      id: 'prisma-user-id',
-      email: 'prisma@example.com',
-      password: '$2b$10$hashed.password.string',
-      role: Role.USER,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  // Login DTO factory
+  static createLoginDto(overrides?: any) {
+    return {
+      email: 'test@example.com',
+      password: 'password123',
       ...overrides,
     };
+  }
 
-    if (withProfile) {
-      return {
-        ...user,
-        profile: {
-          id: 'prisma-profile-id',
-          userId: user.id,
-          firstName: 'Prisma',
-          lastName: 'User',
-          phone: '+1555999888',
-          avatar: null,
-        },
-      };
-    }
+  // Create user DTO factory
+  static createUserDto(overrides?: any) {
+    return {
+      email: 'newuser@example.com',
+      password: 'password123',
+      name: 'New User',
+      role: Role.ADMIN,
+      ...overrides,
+    };
+  }
 
-    return { ...user, profile: null };
+  // Create car DTO factory
+  static createCarDto(overrides?: any) {
+    return {
+      make: 'Honda',
+      model: 'Civic',
+      year: 2022,
+      price: 22000,
+      mileage: 10000,
+      vin: 'NEW123456789VIN',
+      condition: Condition.USED,
+      transmissionType: Transmission.AUTOMATIC,
+      fuelType: FuelType.GASOLINE,
+      bodyType: BodyType.SEDAN,
+      exteriorColor: 'Blue',
+      interiorColor: 'Gray',
+      engineSize: '2.0L',
+      features: ['Air Conditioning', 'Bluetooth'],
+      description: 'New car listing description',
+      ...overrides,
+    };
   }
 }

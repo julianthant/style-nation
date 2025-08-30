@@ -1,735 +1,774 @@
-# CLAUDE.md - Style Nation Frontend (Next.js) with Supabase Auth
+# CLAUDE.md - Style Nation Public Website
 
 ## Project Overview
 
-Style Nation's frontend is built with Next.js 15.5, using Supabase for authentication and following the simplified authentication pattern as described in the documentation.
+The Style Nation web application is a modern, public-facing car showroom built with Next.js 15.5. It provides visitors with a beautiful interface to browse car inventory, view detailed car information, and contact the dealership. This application is **completely public** with no authentication system - all content is accessible to everyone.
 
-## Supabase Authentication Implementation
+## Core Architecture
 
-### Authentication Setup
+### Public-Only Design
+- **No authentication required** - all features are publicly accessible
+- **No user accounts** - no registration, login, or user management
+- **No protected routes** - every page is open to all visitors
+- **Public API integration** - only uses public endpoints from the backend
+- **Contact-based inquiries** - users submit inquiries through contact forms
 
-The authentication system follows the simplified pattern with these key components:
+### Three-App Ecosystem
+This web app is part of a larger ecosystem:
+1. **Public Web App** (this app) - Car browsing and public information
+2. **Admin Dashboard** - Separate app for dealership staff to manage inventory
+3. **Backend API** - Shared NestJS API serving both applications
 
-### 1. Supabase Client Setup
+## Tech Stack
 
-#### Frontend Client (`/utils/supabase/client.ts`)
-```typescript
-import { createBrowserClient } from "@supabase/ssr";
+### Core Framework
+- **Framework**: Next.js 15.5 with App Router
+- **Language**: TypeScript (strict mode enabled)
+- **Styling**: Tailwind CSS + shadcn/ui component library
+- **State Management**: Server-side rendering + client-side API calls
+- **API Client**: Native fetch API with custom wrapper functions
+- **Font**: Inter (Google Fonts)
+- **Theme**: Dark/light mode with system detection
+- **Deployment**: Optimized for Vercel
 
-export const getSupabaseFrontendClient = () => {
-    return createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    )
-}
-```
-
-#### Server Client (`/utils/supabase/server.ts`)
-```typescript
-"use server";
-
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-
-export default async function createSupabaseServerClient() {
-  const cookieStore = await cookies()
-  // ... cookie handling implementation
-}
-```
-
-### 2. Server Actions (`/app/auth/actions/index.ts`)
-
-Server actions handle authentication operations:
-
-```typescript
-export async function signInWithEmailAndPassword(data: {
-    email: string;
-    password: string;
-}) {
-    const supabase = await createSupabaseServerClient();
-    return await supabase.auth.signInWithPassword({ 
-        email: data.email, 
-        password: data.password 
-    });
-}
-
-export async function signUpWithEmailAndPassword(data: {
-    email: string;
-    password: string;
-}) {
-    const supabase = await createSupabaseServerClient();
-    return await supabase.auth.signUp({ 
-        email: data.email, 
-        password: data.password,
-        options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/login`
-        }
-    });
-}
-```
-
-### 3. Login Page (`/app/login/page.tsx`)
-
-Simplified login implementation:
-
-```typescript
-'use client';
-
-import { useState } from 'react';
-import { signInWithEmailAndPassword } from '../auth/actions';
-import { useRouter } from 'next/navigation';
-
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { data, error } = await signInWithEmailAndPassword({ email, password });
-
-    if (error) {
-      console.error('Error logging in:', error);
-    } else {
-      console.log('Logged in successfully:', data);
-      router.push('/dashboard');
-    }
-  };
-
-  // Simple form JSX...
-}
-```
-
-### 4. Protected Routes (`/app/dashboard/page.tsx`)
-
-Dashboard with session checking and API calls:
-
-```typescript
-"use client"
-
-import useAxiosAuth from "@/lib/hooks/useAxiosAuth";
-import { getSupabaseFrontendClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react"
-
-export default function DashboardPage() {
-    const router = useRouter();
-    const [user, setUser] = useState<any>(null);
-    const supabase = getSupabaseFrontendClient();
-    const axiosAuth = useAxiosAuth();
-
-    const getProtectedData = async () => {
-        const response = await axiosAuth.get('/protected');
-        console.log('Protected data:', response.data);
-    }
-
-    useEffect(() => {
-        const checkSession = async () => {
-            const { data } = await supabase.auth.getSession();
-            
-            if (!data.session) {
-                router.push('/login');
-            } else {
-                setUser(data.session.user);
-                getProtectedData();
-            }
-        }
-        checkSession();
-    }, []);
-
-    const logout = async () => {
-        await supabase.auth.signOut();
-        router.push('/login');
-    }
-    
-    return (
-        <div>
-            <h1>Dashboard</h1>  
-            <p>Welcome to the dashboard {user?.email}</p>
-            <button onClick={logout}>Logout</button>
-        </div>
-    )
-}
-```
-
-## API Integration with Axios
-
-### 1. Axios Setup (`/lib/axios.ts`)
-
-```typescript
-import axios from "axios";
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
-
-export default axios.create({
-    baseURL: BASE_URL,
-    headers: { "Content-Type": "application/json" },
-})
-
-export const axiosAuth = axios.create({
-    baseURL: BASE_URL,
-    headers: { "Content-Type": "application/json" },
-})
-```
-
-### 2. Authentication Hook (`/lib/hooks/useAxiosAuth.ts`)
-
-```typescript
-'use client';
-
-import { useEffect } from "react";
-import { axiosAuth } from "../axios";
-import { getSupabaseFrontendClient } from "@/utils/supabase/client";
-
-const useAxiosAuth = () => {
-    const supabase = getSupabaseFrontendClient();
-
-    useEffect(() => {
-        const requestIntercept = axiosAuth.interceptors.request.use(async (config) => {
-            const { data: session} = await supabase.auth.getSession();
-            let accessToken = session?.session?.access_token;
-            
-            if (!config.headers['Authorization']) {
-                config.headers['Authorization'] = `bearer ${accessToken}`
-            }
-            return config;
-        },
-        (error) => Promise.reject(error)
-        );
-        return () => {
-            axiosAuth.interceptors.request.eject(requestIntercept);
-        }
-    }, [])
-
-    return axiosAuth;
-}
-
-export default useAxiosAuth;
-```
-
-## Environment Variables
-
-### Required Environment Variables
-
-```bash
-# Frontend (.env.local)
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
-```
+### Key Features
+- **Server-Side Rendering (SSR)** for SEO and performance
+- **Incremental Static Regeneration (ISR)** for dynamic content
+- **Responsive Design** with mobile/desktop optimized components
+- **Progressive Web App** capabilities
+- **SEO Optimization** with structured data and meta tags
 
 ## Project Structure
 
 ```
-apps/web/src/
-├── app/
-│   ├── auth/
-│   │   └── actions/
-│   │       └── index.ts          # Server actions for auth
-│   ├── login/
-│   │   └── page.tsx              # Simplified login page
-│   ├── dashboard/
-│   │   └── page.tsx              # Protected dashboard
-│   └── layout.tsx
-├── lib/
-│   ├── axios.ts                  # Axios setup
-│   └── hooks/
-│       └── useAxiosAuth.ts       # Auth axios hook
-├── utils/
-│   └── supabase/
-│       ├── client.ts             # Browser client
-│       └── server.ts             # Server client
-└── components/                   # Remove complex auth components
+apps/web/
+├── src/
+│   ├── app/                              # Next.js App Router
+│   │   ├── cars/                         # Car browsing pages ✅
+│   │   │   ├── [id]/                     # Individual car details ✅
+│   │   │   │   └── page.tsx              # Car detail page with SSG+ISR ✅
+│   │   │   └── page.tsx                  # Car listings with search/filters ✅
+│   │   ├── about/                        # Company information ✅
+│   │   │   └── page.tsx                  # About us page ✅
+│   │   ├── contact/                      # Contact information ✅
+│   │   │   └── page.tsx                  # Contact forms and info ✅
+│   │   ├── blog/                         # Optional blog/articles ✅
+│   │   │   └── page.tsx                  # Blog listing page ✅
+│   │   ├── layout.tsx                    # Root layout with providers ✅
+│   │   ├── page.tsx                      # Homepage with SSG ✅
+│   │   ├── loading.tsx                   # Global loading UI
+│   │   ├── error.tsx                     # Global error boundaries
+│   │   ├── not-found.tsx                 # 404 page
+│   │   └── globals.css                   # Global styles and CSS variables ✅
+│   │
+│   ├── components/                       # React components
+│   │   ├── ui/                          # shadcn/ui base components ✅
+│   │   │   ├── button.tsx               # Button variants ✅
+│   │   │   ├── card.tsx                 # Card layouts ✅
+│   │   │   ├── input.tsx                # Form inputs ✅
+│   │   │   ├── dialog.tsx               # Modal dialogs ✅
+│   │   │   ├── skeleton.tsx             # Loading skeletons ✅
+│   │   │   └── ...                      # Other UI primitives ✅
+│   │   │
+│   │   ├── adaptive/                    # Responsive wrapper components ✅
+│   │   │   ├── adaptive-header.tsx      # Auto mobile/desktop header ✅
+│   │   │   ├── adaptive-hero.tsx        # Hero section variants ✅
+│   │   │   ├── adaptive-car-listing.tsx # Car grid variants ✅
+│   │   │   ├── adaptive-layout.tsx      # Page layout wrapper ✅
+│   │   │   └── device-provider.tsx      # Device detection context ✅
+│   │   │
+│   │   ├── mobile/                      # Mobile-specific components ✅
+│   │   │   ├── layout/                  # Mobile layouts ✅
+│   │   │   │   └── mobile-header.tsx    # Touch-optimized header ✅
+│   │   │   ├── home/                    # Mobile homepage sections ✅
+│   │   │   │   └── mobile-hero.tsx      # Full-screen mobile hero ✅
+│   │   │   └── cars/                    # Mobile car components ✅
+│   │   │       ├── mobile-car-card.tsx  # Touch-friendly car cards ✅
+│   │   │       └── mobile-car-listing.tsx # Mobile grid layout ✅
+│   │   │
+│   │   ├── desktop/                     # Desktop-specific components ✅
+│   │   │   ├── layout/                  # Desktop layouts ✅
+│   │   │   │   └── desktop-header.tsx   # Desktop navigation ✅
+│   │   │   ├── home/                    # Desktop homepage sections ✅
+│   │   │   │   └── desktop-hero.tsx     # Wide desktop hero ✅
+│   │   │   └── cars/                    # Desktop car components ✅
+│   │   │       ├── desktop-car-card.tsx # Hover-optimized cards ✅
+│   │   │       └── desktop-car-listing.tsx # Multi-column layout ✅
+│   │   │
+│   │   ├── cars/                        # Car-related components ✅
+│   │   │   ├── car-detail-page.tsx      # Complete car detail view ✅
+│   │   │   ├── car-detail-gallery.tsx   # Image gallery ✅
+│   │   │   ├── car-detail-info.tsx      # Car specifications ✅
+│   │   │   ├── car-detail-sidebar.tsx   # Contact/inquiry sidebar ✅
+│   │   │   ├── car-listing.tsx          # Car grid component ✅
+│   │   │   ├── enhanced-car-listing.tsx # Advanced car listing ✅
+│   │   │   ├── filter-sidebar.tsx       # Search filters ✅
+│   │   │   ├── advanced-filters.tsx     # Advanced filtering ✅
+│   │   │   ├── quick-search.tsx         # Search input ✅
+│   │   │   ├── search-results.tsx       # Search result display ✅
+│   │   │   ├── featured-cars-section.tsx # Featured cars ✅
+│   │   │   └── cars-page-client.tsx     # Client-side cars page ✅
+│   │   │
+│   │   ├── home/                        # Homepage sections ✅
+│   │   │   ├── hero-section.tsx         # Main hero section ✅
+│   │   │   ├── vehicle-showcase.tsx     # Featured vehicles ✅
+│   │   │   ├── browse-by-type.tsx       # Category browsing ✅
+│   │   │   ├── cta-sections.tsx         # Call-to-action blocks ✅
+│   │   │   ├── online-everywhere.tsx    # Service highlights ✅
+│   │   │   └── home-page-client.tsx     # Client component wrapper ✅
+│   │   │
+│   │   ├── forms/                       # Contact and inquiry forms ✅
+│   │   │   ├── inquiry-form.tsx         # Car-specific inquiries ✅
+│   │   │   ├── contact-form.tsx         # General contact form
+│   │   │   └── newsletter-form.tsx      # Email subscription
+│   │   │
+│   │   ├── layout/                      # Layout components ✅
+│   │   │   ├── main-header.tsx          # Main navigation ✅
+│   │   │   ├── footer.tsx               # Site footer ✅
+│   │   │   └── breadcrumbs.tsx          # Navigation breadcrumbs
+│   │   │
+│   │   ├── vehicles/                    # Vehicle display components ✅
+│   │   │   └── vehicle-card.tsx         # Reusable vehicle card ✅
+│   │   │
+│   │   └── providers/                   # Context providers ✅
+│   │       ├── theme-provider.tsx       # Dark/light theme ✅
+│   │       └── query-provider.tsx       # React Query setup ✅
+│   │
+│   ├── lib/                             # Utility libraries and functions
+│   │   ├── api/                         # API integration layer ✅
+│   │   │   ├── cars.ts                  # Car data fetching ✅
+│   │   │   ├── inquiries.ts             # Inquiry submissions ✅
+│   │   │   ├── contact.ts               # Contact form handling ✅
+│   │   │   ├── server-cars.ts           # Server-side car API ✅
+│   │   │   └── index.ts                 # Consolidated exports ✅
+│   │   │
+│   │   ├── hooks/                       # Custom React hooks ✅
+│   │   │   ├── use-cars.ts              # Car data management ✅
+│   │   │   ├── use-search.ts            # Search functionality
+│   │   │   └── use-filters.ts           # Filter state management
+│   │   │
+│   │   ├── types/                       # TypeScript type definitions ✅
+│   │   │   ├── car.ts                   # Car and related interfaces ✅
+│   │   │   ├── inquiry.ts               # Inquiry types
+│   │   │   └── index.ts                 # Type exports
+│   │   │
+│   │   ├── utils/                       # Utility functions ✅
+│   │   │   ├── placeholder.ts           # Placeholder helpers ✅
+│   │   │   ├── device-detection.ts      # Device detection ✅
+│   │   │   ├── formatters.ts            # Data formatting
+│   │   │   └── constants.ts             # App constants
+│   │   │
+│   │   ├── axios.ts                     # HTTP client configuration ✅
+│   │   └── utils.ts                     # Common utilities (cn, etc.) ✅
+│   │
+│   └── middleware.ts                    # Next.js middleware (minimal)
+│
+├── public/                              # Static assets
+│   ├── images/                          # Image assets
+│   ├── icons/                           # Icon files
+│   └── favicon.ico                      # Site favicon
+│
+├── .env.local                           # Environment variables
+├── next.config.ts                       # Next.js configuration
+├── tailwind.config.ts                   # Tailwind CSS config
+├── components.json                      # shadcn/ui configuration ✅
+├── tsconfig.json                        # TypeScript configuration
+├── package.json                         # Dependencies and scripts
+└── claude.md                            # This documentation file
 ```
 
-## Authentication Flow
+## API Integration Architecture
 
-### 1. Login Flow
-1. User enters email/password in simple form
-2. Form calls `signInWithEmailAndPassword` server action
-3. Server action uses Supabase to authenticate
-4. On success, redirect to `/dashboard`
-5. On error, show error message
-
-### 2. Session Management
-1. Dashboard checks for session using `supabase.auth.getSession()`
-2. If no session, redirect to `/login`
-3. If session exists, store user data and make authenticated API calls
-
-### 3. API Calls
-1. `useAxiosAuth` hook automatically injects Supabase JWT token
-2. Backend validates JWT using Supabase strategy
-3. Protected routes return data or 401/403 errors
-
-## Key Changes from Previous Implementation
-
-### Removed Complex Components
-- Removed complex Zustand auth store
-- Removed OAuth buttons and complex forms
-- Removed validation schemas and form libraries for auth
-- Simplified to basic HTML forms
-
-### Simplified Architecture
-- Server actions for authentication operations
-- Direct Supabase client usage instead of custom store
-- Simple session checking in components
-- Axios interceptor for automatic token injection
-
-### Aligned with Documentation
-- Matches the provided Supabase + NestJS documentation pattern
-- Uses the exact function names and structure from the docs
-- Follows the simplified client-server interaction model
-
-## Usage Examples
-
-### Making Authenticated API Calls
+### Public API Endpoints
+The web app exclusively uses public API endpoints that require no authentication:
 
 ```typescript
-// In any component
-const axiosAuth = useAxiosAuth();
+// Car browsing (public access)
+GET /api/cars                    // List available cars with pagination/filters
+GET /api/cars/featured          // Get featured cars for homepage
+GET /api/cars/:id               // Get individual car details
+GET /api/cars/:id/images        // Get car image gallery
+GET /api/cars/popular-makes     // Get popular car makes with counts
+POST /api/cars/:id/views        // Increment car view count
 
-const fetchData = async () => {
-    try {
-        const response = await axiosAuth.get('/protected');
-        console.log('Data:', response.data);
-    } catch (error) {
-        console.error('Error:', error);
+// Contact and inquiries (public submissions)
+POST /api/inquiries             // Submit car-specific inquiry
+POST /api/contact               // Submit general contact form
+
+// System status (public)
+GET /api/health                 // API health check
+```
+
+### API Client Implementation
+
+```typescript
+// lib/api/cars.ts - Car data fetching
+import axios from '@/lib/axios';
+
+export class CarsAPI {
+  async getCars(params: SearchCarsParams = {}) {
+    const response = await axios.get('/cars', { params });
+    return response.data;
+  }
+
+  async getCar(id: string) {
+    const response = await axios.get(`/cars/${id}`);
+    return response.data;
+  }
+
+  async getFeaturedCars(limit = 10) {
+    const response = await axios.get('/cars/featured', { 
+      params: { limit } 
+    });
+    return response.data;
+  }
+
+  async getPopularMakes(limit = 20) {
+    const response = await axios.get('/cars/popular-makes', { 
+      params: { limit } 
+    });
+    return response.data;
+  }
+
+  async incrementViewCount(id: string) {
+    await axios.post(`/cars/${id}/views`);
+  }
+}
+
+export const carsAPI = new CarsAPI();
+```
+
+```typescript
+// lib/api/inquiries.ts - Contact forms
+export class InquiriesAPI {
+  async submitInquiry(inquiry: CreateInquiryRequest) {
+    const response = await axios.post('/inquiries', inquiry);
+    return response.data;
+  }
+
+  async submitContact(contact: ContactRequest) {
+    const response = await axios.post('/contact', contact);
+    return response.data;
+  }
+}
+
+export const inquiriesAPI = new InquiriesAPI();
+```
+
+### Server-Side Data Fetching
+
+```typescript
+// lib/api/server-cars.ts - For server components
+export class ServerCarsAPI {
+  async getCars(params = {}) {
+    const url = new URL('/cars', API_BASE_URL);
+    // Add search params...
+    
+    const response = await fetch(url.toString(), {
+      cache: 'no-store', // Always fetch fresh data
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch cars: ${response.status}`);
     }
+    
+    return response.json();
+  }
+
+  async getFeaturedCars(limit = 10) {
+    // Similar implementation for server-side fetching
+  }
+}
+
+export const serverCarsAPI = new ServerCarsAPI();
+```
+
+## Component Architecture
+
+### Adaptive Component System
+The app uses a three-tier component system for optimal user experience across devices:
+
+#### 1. Device-Specific Components
+- **Mobile Components** (`components/mobile/`) - Touch-optimized, full-width layouts
+- **Desktop Components** (`components/desktop/`) - Mouse-friendly, multi-column layouts
+- **Adaptive Wrappers** (`components/adaptive/`) - Smart components that choose the right version
+
+#### 2. Device Detection System
+
+```typescript
+// components/adaptive/device-provider.tsx
+export function useDevice() {
+  const [device, setDevice] = useState<'mobile' | 'desktop'>('desktop');
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    const checkDevice = () => {
+      const isMobile = window.innerWidth < 768 || 
+                      /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setDevice(isMobile ? 'mobile' : 'desktop');
+      setIsHydrated(true);
+    };
+    
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  return { device, isMobile: device === 'mobile', isHydrated };
+}
+```
+
+#### 3. Adaptive Component Pattern
+
+```typescript
+// components/adaptive/adaptive-header.tsx
+export function AdaptiveHeader({ variant = 'default' }) {
+  const { isMobile, isHydrated } = useDevice();
+
+  // Prevent hydration mismatch
+  if (!isHydrated) {
+    return <div className="h-16" />; // Placeholder
+  }
+
+  return isMobile ? 
+    <MobileHeader variant={variant} /> : 
+    <DesktopHeader variant={variant} />;
+}
+```
+
+### Data Fetching Patterns
+
+#### 1. Server-Side Rendering (Homepage)
+
+```typescript
+// app/page.tsx
+export default async function HomePage() {
+  // Server-side data fetching for SEO and performance
+  const [featuredCars, recentCars] = await Promise.all([
+    serverCarsAPI.getFeaturedCars(8),
+    serverCarsAPI.getCars({ limit: 8, sortBy: 'newest' })
+  ]);
+
+  return (
+    <HomePageClient 
+      initialData={{ featuredCars, recentCars }}
+    />
+  );
+}
+
+// Enable ISR for updated data
+export const revalidate = 1800; // 30 minutes
+```
+
+#### 2. Static Generation with ISR (Car Details)
+
+```typescript
+// app/cars/[id]/page.tsx
+export default async function CarDetailPage({ params }) {
+  try {
+    const car = await serverCarsAPI.getCar(params.id);
+    return <CarDetailPage car={car} />;
+  } catch (error) {
+    notFound();
+  }
+}
+
+// Generate static params for popular cars
+export async function generateStaticParams() {
+  const featuredCars = await serverCarsAPI.getFeaturedCars(20);
+  return featuredCars.map(car => ({ id: car.id }));
+}
+
+// Enable ISR for car updates
+export const revalidate = 600; // 10 minutes
+```
+
+#### 3. Client-Side Data Fetching (Search/Filters)
+
+```typescript
+// lib/hooks/use-cars.ts
+export function useCars(params?: SearchCarsParams) {
+  const [cars, setCars] = useState<Car[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCars = async () => {
+    try {
+      setLoading(true);
+      const response = await carsAPI.getCars(params);
+      setCars(response.cars);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load cars');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCars();
+  }, [JSON.stringify(params)]);
+
+  return { cars, loading, error, refetch: fetchCars };
+}
+```
+
+## Form Handling
+
+### Car Inquiry Form
+
+```typescript
+// components/forms/inquiry-form.tsx
+export function InquiryForm({ carId, carName, onSuccess }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const form = useForm({
+    resolver: zodResolver(inquirySchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      message: carName ? `I'm interested in the ${carName}. Please contact me.` : '',
+    },
+  });
+
+  const onSubmit = async (data) => {
+    setIsSubmitting(true);
+    try {
+      await inquiriesAPI.submitInquiry({ ...data, carId });
+      toast({
+        title: 'Inquiry Sent!',
+        description: 'We\'ll contact you soon with more information.',
+      });
+      form.reset();
+      onSuccess?.();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to send inquiry. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      {/* Form fields */}
+    </form>
+  );
+}
+```
+
+### Contact Form
+
+```typescript
+// components/forms/contact-form.tsx
+export function ContactForm({ onSuccess }) {
+  const onSubmit = async (data) => {
+    try {
+      await contactAPI.submitContact(data);
+      // Handle success
+    } catch (error) {
+      // Handle error
+    }
+  };
+
+  return <form>{/* Contact form fields */}</form>;
+}
+```
+
+## SEO and Performance Optimization
+
+### Meta Data Implementation
+
+```typescript
+// app/cars/[id]/page.tsx
+export async function generateMetadata({ params }): Promise<Metadata> {
+  const car = await serverCarsAPI.getCar(params.id);
+  
+  return {
+    title: `${car.year} ${car.make} ${car.model} - Style Nation`,
+    description: `${car.description.substring(0, 160)}...`,
+    openGraph: {
+      title: `${car.year} ${car.make} ${car.model}`,
+      description: car.description,
+      images: car.images?.map(img => img.url) || [],
+      type: 'product',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${car.year} ${car.make} ${car.model}`,
+      description: car.description,
+      images: car.images?.[0]?.url,
+    },
+  };
+}
+```
+
+### Structured Data
+
+```typescript
+// components/cars/car-structured-data.tsx
+export function CarStructuredData({ car }) {
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Vehicle',
+    name: `${car.year} ${car.make} ${car.model}`,
+    brand: { '@type': 'Brand', name: car.make },
+    model: car.model,
+    vehicleModelDate: car.year.toString(),
+    price: car.price.toString(),
+    priceCurrency: 'USD',
+    mileage: car.mileage,
+    fuelType: car.fuelType,
+    vehicleTransmission: car.transmissionType,
+    bodyType: car.bodyType,
+    vehicleCondition: car.condition,
+    image: car.images?.map(img => img.url) || [],
+    offers: {
+      '@type': 'Offer',
+      price: car.price.toString(),
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  );
+}
+```
+
+## Environment Configuration
+
+```bash
+# apps/web/.env.local
+
+# API Configuration (required)
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+
+# Site Configuration
+NEXT_PUBLIC_SITE_NAME="Style Nation"
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Company Information
+NEXT_PUBLIC_COMPANY_NAME="Style Nation Auto"
+NEXT_PUBLIC_COMPANY_PHONE="+1-555-0123"
+NEXT_PUBLIC_COMPANY_EMAIL="info@stylenation.com"
+NEXT_PUBLIC_COMPANY_ADDRESS="123 Auto Lane, Car City, CC 12345"
+
+# Analytics (optional)
+NEXT_PUBLIC_GA_TRACKING_ID=your_ga_tracking_id
+
+# Social Media Links (optional)
+NEXT_PUBLIC_FACEBOOK_URL=https://facebook.com/stylenation
+NEXT_PUBLIC_TWITTER_URL=https://twitter.com/stylenation
+NEXT_PUBLIC_INSTAGRAM_URL=https://instagram.com/stylenation
+```
+
+## Development Workflow
+
+### Getting Started
+
+```bash
+# Install dependencies
+cd apps/web
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your API URL and other settings
+
+# Start development server
+npm run dev
+
+# The app will be available at http://localhost:3000
+```
+
+### Available Scripts
+
+```bash
+# Development
+npm run dev              # Start development server with hot reload
+npm run build            # Build production bundle
+npm run start            # Start production server
+npm run lint             # Lint code with ESLint
+npm run type-check       # Run TypeScript compiler checks
+
+# Testing
+npm run test             # Run unit tests with Jest
+npm run test:watch       # Run tests in watch mode
+npm run test:coverage    # Generate coverage report
+
+# Utilities
+npm run analyze          # Analyze bundle size
+npm run clean            # Clean build artifacts and node_modules
+```
+
+### Code Quality Standards
+
+```json
+// tsconfig.json - Strict TypeScript configuration
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
+  }
+}
+```
+
+### Performance Best Practices
+
+1. **Image Optimization**
+   - Use Next.js Image component with proper sizing
+   - Implement lazy loading for car galleries
+   - Provide appropriate placeholder images
+
+2. **Code Splitting**
+   - Automatic route-based splitting via App Router
+   - Dynamic imports for large components
+   - Separate bundles for mobile/desktop components
+
+3. **Caching Strategy**
+   - SSG for static content (homepage, about)
+   - ISR for dynamic content (car listings, details)
+   - Client-side caching with SWR or React Query
+
+4. **Bundle Optimization**
+   - Tree shaking for unused code elimination
+   - Minimize bundle size with appropriate imports
+   - Analyze bundle with webpack-bundle-analyzer
+
+## Testing Strategy
+
+### Component Testing
+
+```typescript
+// __tests__/components/cars/car-card.test.tsx
+import { render, screen } from '@testing-library/react';
+import { CarCard } from '@/components/cars/car-card';
+import { mockCar } from '@/lib/test-utils/fixtures';
+
+describe('CarCard', () => {
+  it('renders car information correctly', () => {
+    render(<CarCard car={mockCar} />);
+    
+    expect(screen.getByText(`${mockCar.year} ${mockCar.make} ${mockCar.model}`))
+      .toBeInTheDocument();
+    expect(screen.getByText('View Details')).toBeInTheDocument();
+    expect(screen.getByText('Contact Us')).toBeInTheDocument();
+  });
+});
+```
+
+### API Integration Testing
+
+```typescript
+// __tests__/lib/api/cars.test.ts
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+import { carsAPI } from '@/lib/api/cars';
+
+const server = setupServer(
+  rest.get('/api/cars', (req, res, ctx) => {
+    return res(ctx.json({ cars: [mockCar], total: 1 }));
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+describe('carsAPI', () => {
+  it('fetches cars successfully', async () => {
+    const result = await carsAPI.getCars();
+    expect(result.cars).toHaveLength(1);
+    expect(result.cars[0]).toMatchObject(mockCar);
+  });
+});
+```
+
+## Deployment
+
+### Vercel Deployment (Recommended)
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+
+# Set environment variables in Vercel dashboard:
+# NEXT_PUBLIC_API_URL=https://your-api.vercel.app/api
+```
+
+### Production Optimizations
+
+```typescript
+// next.config.ts
+const nextConfig = {
+  images: {
+    domains: ['images.unsplash.com'],
+    formats: ['image/webp', 'image/avif'],
+  },
+  compress: true,
+  poweredByHeader: false,
+  generateEtags: false,
+  httpAgentOptions: {
+    keepAlive: true,
+  },
 };
 ```
 
-### Session Check in Components
+## Troubleshooting
 
-```typescript
-const supabase = getSupabaseFrontendClient();
+### Common Issues
 
-useEffect(() => {
-    const checkAuth = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            router.push('/login');
-        }
-    };
-    checkAuth();
-}, []);
-```
+1. **Hydration Mismatches**
+   - Ensure device detection properly handles SSR/client differences
+   - Use `useIsomorphicLayoutEffect` for window-dependent code
+   - Provide loading states during hydration
 
-## Dependencies
+2. **API Connection Issues**
+   - Verify NEXT_PUBLIC_API_URL is correctly set
+   - Check CORS settings on the backend
+   - Ensure API endpoints are accessible from the frontend domain
 
-### Key Packages
-- `@supabase/ssr`: Server-side rendering support
-- `@supabase/supabase-js`: Supabase client
-- `axios`: HTTP client for API calls
-- Next.js 15.5+ with App Router
+3. **Image Loading Problems**
+   - Add image domains to next.config.ts
+   - Implement proper fallback images
+   - Use appropriate image sizes for different viewports
 
-### Removed Dependencies
-- Complex form libraries (for auth)
-- Zustand (auth store)
-- Complex validation schemas (for auth)
+4. **Performance Issues**
+   - Implement proper loading states
+   - Use React.memo for expensive components
+   - Optimize database queries in the backend
 
-This simplified implementation aligns with the documentation provided and removes the complexity of the previous authentication system while maintaining full functionality.
+### Development Tips
 
-## Landing Page Implementation & Best Practices
+1. **Component Development**
+   - Build mobile and desktop versions simultaneously
+   - Test on actual devices, not just browser dev tools
+   - Use adaptive components in pages, not device-specific ones directly
 
-### Modern Landing Page Architecture
+2. **API Integration**
+   - Always handle loading and error states
+   - Implement proper retry mechanisms for failed requests
+   - Use TypeScript interfaces for all API responses
 
-The landing page has been completely redesigned with modern components following React/Next.js best practices:
+3. **SEO Optimization**
+   - Generate structured data for all car listings
+   - Implement proper meta tags for social sharing
+   - Use meaningful URLs and breadcrumb navigation
 
-#### New Component Structure
-```
-src/components/
-├── home/
-│   ├── hero-section.tsx          # Hero with search functionality
-│   ├── vehicle-showcase.tsx      # "Explore All Vehicles" section  
-│   ├── browse-by-type.tsx        # Vehicle type browsing
-│   ├── cta-sections.tsx          # "Looking for Car" / "Sell Car" CTAs
-│   └── online-everywhere.tsx     # Feature showcase section
-├── vehicles/
-│   └── vehicle-card.tsx          # Redesigned vehicle cards
-├── layout/
-│   └── main-header.tsx           # Hero/regular header component
-└── ui/ (existing shadcn components)
-```
-
-### Theme Implementation
-
-#### New OKLCH Color System
-Updated `globals.css` with modern color palette:
-
-```css
-:root {
-  --background: oklch(1.0000 0 0);
-  --foreground: oklch(0.1884 0.0128 248.5103);
-  --primary: oklch(0.5699 0.1981 268.5093);  /* Purple accent */
-  --font-sans: Open Sans, sans-serif;
-  --radius: 1.3rem;                          /* Larger border radius */
-  /* ... complete theme variables */
-}
-```
-
-#### Key Theme Changes
-- **Font**: Changed from Geist to Open Sans
-- **Colors**: Modern purple-based OKLCH color system
-- **Radius**: Increased to 1.3rem for modern design
-- **Shadows**: Transparent shadows for clean aesthetics
-
-### State Management Best Practices Implementation
-
-Following the guidelines provided, state management is implemented with these patterns:
-
-#### 1. State Colocation
-```typescript
-// BAD: State too high in component tree
-function App() {
-  const [searchFilters, setSearchFilters] = useState({}) // ❌ Too high
-  return <HeroSection /> // Only HeroSection needs these
-}
-
-// GOOD: State close to component that uses it  
-function HeroSection({ onSearch }: HeroSectionProps) {
-  const [activeTab, setActiveTab] = useState('All')  // ✅ Local state
-  const [filters, setFilters] = useState<SearchFilters>({}) // ✅ Used here
-  
-  const handleSearch = () => {
-    onSearch?.(filters) // Pass up only when needed
-  }
-}
-```
-
-#### 2. Granular State Management
-```typescript
-// BAD: One large state object
-const [vehicleData, setVehicleData] = useState({
-  vehicles: [],
-  loading: false,
-  activeTab: 'Recent Cars',
-  bookmarks: []
-}) // ❌ Everything re-renders when any part changes
-
-// GOOD: Separate specific states
-const [vehicles, setVehicles] = useState([])     // ✅ Only affects vehicle list
-const [activeTab, setActiveTab] = useState('Recent Cars') // ✅ Only affects tabs
-const [bookmarks, setBookmarks] = useState([])   // ✅ Only affects bookmarked items
-```
-
-#### 3. Handler Functions
-```typescript
-export default function Home() {
-  // Handler functions following best practices - keeping state close to components
-  const handleSearch = (filters: SearchFilters) => {
-    console.log('Search filters:', filters)
-    // TODO: Implement search functionality
-  }
-
-  const handleVehicleClick = (id: string) => {
-    console.log('Vehicle clicked:', id)  
-    // TODO: Navigate to vehicle detail page
-  }
-
-  // Each section has specific, focused handlers
-  return (
-    <div>
-      <HeroSection onSearch={handleSearch} />
-      <VehicleShowcase onVehicleClick={handleVehicleClick} />
-    </div>
-  )
-}
-```
-
-### Performance Optimization Implementation
-
-#### 1. Image Optimization
-```typescript
-// Using Next.js Image component with proper optimization
-<Image 
-  src={image} 
-  alt={title} 
-  fill
-  className="object-cover"
-  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 328px"
-  loading="lazy"        // ✅ Lazy loading for performance
-/>
-```
-
-#### 2. Component Optimization
-```typescript
-// Hover effects with CSS transitions instead of JS
-.hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-```
-
-#### 3. Event Handler Best Practices
-```typescript
-// Proper event handling with stopPropagation
-const handleBookmark = (e: React.MouseEvent) => {
-  e.stopPropagation() // ✅ Prevents parent click events
-  onBookmark?.(id)
-}
-```
-
-### Accessibility Implementation
-
-#### 1. Semantic HTML Structure
-```typescript
-<section className="py-16 bg-white">
-  <div className="container mx-auto px-4">
-    <h2 className="text-[40px] font-bold">Browse by Type</h2>
-    <nav className="border-b border-[#E9E9E9]">
-      <div className="flex gap-8">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            role="tab"
-            aria-selected={activeTab === tab}
-            className={/* styling */}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-    </nav>
-  </div>
-</section>
-```
-
-#### 2. ARIA Labels and Descriptions
-```typescript
-<button 
-  onClick={handleBookmark}
-  className="absolute top-5 right-5"
-  aria-label="Bookmark vehicle"  // ✅ Screen reader friendly
->
-  <Bookmark className="w-3 h-3" />
-</button>
-```
-
-#### 3. Keyboard Navigation
-```typescript
-// Tab focus management with proper focus indicators
-const handleKeyDown = (e: React.KeyboardEvent) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    handleClick()
-  }
-}
-```
-
-### Component Design Patterns
-
-#### 1. Prop Interface Design
-```typescript
-interface VehicleCardProps {
-  id: string              // ✅ Required identifiers
-  title: string
-  description: string
-  image: string
-  price: string
-  // Specification data grouped logically
-  mileage: string
-  fuelType: string  
-  transmission: string
-  year: string
-  // Optional enhancements
-  badge?: {
-    text: string
-    color: 'green' | 'blue'  // ✅ Strict typing
-  }
-  // Event handlers with clear naming
-  onViewDetails?: (id: string) => void
-  onBookmark?: (id: string) => void
-}
-```
-
-#### 2. Component Composition
-```typescript
-// Components are composable and focused on single responsibility
-function VehicleShowcase({ onViewAll, onVehicleClick, onBookmark }: VehicleShowcaseProps) {
-  return (
-    <section>
-      <SectionHeader onViewAll={onViewAll} />
-      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      <VehicleGrid>
-        {vehicles.map((vehicle) => (
-          <VehicleCard
-            key={vehicle.id}
-            {...vehicle}
-            onViewDetails={onVehicleClick}
-            onBookmark={onBookmark}
-          />
-        ))}
-      </VehicleGrid>
-    </section>
-  )
-}
-```
-
-#### 3. Loading States and Error Handling
-```typescript
-// Future enhancement pattern for loading states
-function VehicleCard({ image, loading = false }: VehicleCardProps) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-      <div className="relative h-[219px] w-full">
-        {loading ? (
-          <div className="animate-pulse bg-muted w-full h-full rounded-t-2xl" />
-        ) : (
-          <Image src={image} alt={title} fill className="object-cover" />
-        )}
-      </div>
-      {/* ... rest of component */}
-    </div>
-  )
-}
-```
-
-### Data Fetching Patterns (Ready for Implementation)
-
-#### 1. SWR Integration Pattern
-```typescript
-// Future data fetching with SWR (stale-while-revalidate)
-import useSWR from 'swr'
-
-function VehicleShowcase() {
-  const { data: vehicles, error, isLoading } = useSWR('/api/vehicles', fetcher, {
-    revalidateOnFocus: true,
-    dedupingInterval: 60000, // Cache for 1 minute
-  })
-
-  if (error) return <ErrorState />
-  if (isLoading) return <VehicleGridSkeleton />
-
-  return <VehicleGrid vehicles={vehicles} />
-}
-```
-
-#### 2. Infinite Scrolling Pattern
-```typescript
-// Pattern ready for infinite scroll implementation
-import useSWRInfinite from 'swr/infinite'
-
-const getKey = (pageIndex: number, previousPageData: any) => {
-  if (previousPageData && !previousPageData.length) return null
-  return `/api/vehicles?page=${pageIndex}&limit=20`
-}
-
-const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher)
-```
-
-### Hybrid Rendering Strategy Implementation
-
-The landing page is architected for hybrid rendering:
-
-#### SSG for Static Content
-```typescript
-// Vehicle type data is static - perfect for SSG
-export async function getStaticProps() {
-  return {
-    props: {
-      vehicleTypes: VEHICLE_TYPES, // Static data
-    },
-    revalidate: 86400, // Revalidate once per day
-  }
-}
-```
-
-#### SSR for Dynamic Content  
-```typescript
-// Vehicle listings need fresh data - use SSR
-export async function getServerSideProps() {
-  const vehicles = await fetchVehicles()
-  return {
-    props: { vehicles },
-  }
-}
-```
-
-#### CSR for Interactive Elements
-```typescript
-// Search functionality uses client-side rendering
-'use client'
-
-function HeroSection() {
-  const [filters, setFilters] = useState<SearchFilters>({})
-  
-  // Client-side interaction
-  const handleSearch = () => {
-    // Filter and search logic
-  }
-}
-```
-
-### Utility Classes and Custom Styles
-
-#### Custom Utility Classes Added
-```css
-.hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.line-clamp-1, .line-clamp-2, .line-clamp-3 {
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--lines);
-}
-```
-
-### TypeScript Best Practices
-
-#### Strict Interface Definitions
-```typescript
-interface SearchFilters {
-  make?: string
-  model?: string
-  minPrice?: number
-  maxPrice?: number
-  condition?: string
-}
-
-interface VehicleType {
-  type: string
-  image: string
-  icon: React.ReactNode
-  gridClass?: string
-  onTypeClick?: (type: string) => void
-}
-```
-
-#### Event Handler Typing
-```typescript
-// Proper event typing for accessibility
-const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-  if (e.key === 'Enter' || e.key === ' ') {
-    e.preventDefault()
-    handleClick()
-  }
-}
-```
-
-### Maintenance and Scalability
-
-#### Component Organization
-- **Single Responsibility**: Each component has one clear purpose
-- **Composition over Inheritance**: Components compose together cleanly  
-- **Props Interface Design**: Clear, typed interfaces for all components
-- **Event Handler Patterns**: Consistent naming and implementation
-
-#### Future Enhancement Patterns
-- **Data Fetching**: Ready for SWR/TanStack Query integration
-- **State Management**: Easily upgradeable to Zustand if needed
-- **Search Implementation**: Architecture supports advanced filtering
-- **Animation**: CSS transitions ready for enhancement with Framer Motion
-
-This implementation showcases modern React/Next.js development patterns while maintaining performance, accessibility, and maintainability standards.
+This documentation provides a comprehensive guide to the Style Nation public website architecture, focusing on public access patterns, modern React development practices, and optimal user experience across all devices.

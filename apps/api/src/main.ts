@@ -48,10 +48,22 @@ async function bootstrap() {
   // Swagger documentation
   const config = new DocumentBuilder()
     .setTitle('Style Nation API')
-    .setDescription('Car showroom management system - Public API for car browsing and inquiries')
+    .setDescription('Car showroom management system - API for car management and authentication')
     .setVersion('1.0.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth'
+    )
+    .addTag('Authentication', 'Authentication endpoints')
     .addTag('health', 'Health check endpoints')
-    .addTag('users', 'User information endpoints')
+    .addTag('users', 'User management endpoints')
     .addTag('cars', 'Car listing endpoints')
     .addTag('inquiries', 'Customer inquiry endpoints')
     .addTag('facebook', 'Facebook integration endpoints')

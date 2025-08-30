@@ -118,7 +118,7 @@ export function VehicleCard({
           <Button
             variant="ghost"
             onClick={handleViewDetails}
-            className="text-[#405FF2] hover:text-[#405FF2]/80 p-0 h-auto font-medium text-[15px] group"
+            className="text-[#405FF2] hover:text-white hover:bg-[#405FF2] px-3 py-2 h-auto font-medium text-[15px] group transition-all"
           >
             View Details
             <ArrowUpRight className="w-[14px] h-[14px] ml-2 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

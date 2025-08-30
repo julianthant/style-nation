@@ -5,8 +5,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Menu, Car, X } from 'lucide-react'
-import { UserNav } from '@/components/auth/user-nav'
-import useAuthStore from '@/lib/auth-store'
 
 interface MainHeaderProps {
   variant?: 'hero' | 'default'
@@ -14,7 +12,6 @@ interface MainHeaderProps {
 }
 
 export function MainHeader({ variant = 'default', className = '' }: MainHeaderProps) {
-  const { user, loading } = useAuthStore()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSticky, setIsSticky] = useState(false)
 
@@ -97,40 +94,36 @@ export function MainHeader({ variant = 'default', className = '' }: MainHeaderPr
               ))}
             </nav>
 
-            {/* Auth & Actions - Right */}
+            {/* Actions - Right */}
             <div className="flex items-center space-x-3">
               {!isHero && <ThemeToggle />}
               
-              {/* Always show auth buttons - no loading check needed */}
-              {user ? (
-                <UserNav />
-              ) : (
-                <div className="hidden sm:flex items-center space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    asChild
-                    className={`font-medium transition-colors duration-200 ${
-                      isHero && !isSticky 
-                        ? 'text-white hover:text-white/80 hover:bg-white/10' 
-                        : 'hover:text-primary'
-                    }`}
-                  >
-                    <Link href="/login">Sign In</Link>
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    asChild
-                    className={`font-medium transition-all duration-200 hover:scale-105 ${
-                      isHero && !isSticky
-                        ? 'bg-white text-[#050B20] hover:bg-white/90 shadow-lg' 
-                        : 'bg-primary hover:bg-primary/90'
-                    }`}
-                  >
-                    <Link href="/register">Get Started</Link>
-                  </Button>
-                </div>
-              )}
+              {/* Contact/CTA Buttons - No Authentication */}
+              <div className="hidden sm:flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  asChild
+                  className={`font-medium transition-colors duration-200 ${
+                    isHero && !isSticky 
+                      ? 'text-white hover:text-white/80 hover:bg-white/10' 
+                      : 'hover:text-primary'
+                  }`}
+                >
+                  <Link href="/contact">Contact Us</Link>
+                </Button>
+                <Button 
+                  size="sm" 
+                  asChild
+                  className={`font-medium transition-all duration-200 hover:scale-105 ${
+                    isHero && !isSticky
+                      ? 'bg-white text-[#050B20] hover:bg-white/90 shadow-lg' 
+                      : 'bg-primary hover:bg-primary/90'
+                  }`}
+                >
+                  <Link href="/cars">Shop Now</Link>
+                </Button>
+              </div>
 
               {/* Mobile Menu Button */}
               <Button
@@ -204,28 +197,26 @@ export function MainHeader({ variant = 'default', className = '' }: MainHeaderPr
                 </nav>
               </div>
 
-              {/* Mobile Auth Buttons */}
-              {!user && (
-                <div className="p-6 border-t border-border space-y-3">
-                  <Button 
-                    variant="outline"
-                    size="lg"
-                    asChild
-                    className="w-full font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Link href="/login">Sign In</Link>
-                  </Button>
-                  <Button 
-                    size="lg"
-                    asChild
-                    className="w-full font-medium bg-primary hover:bg-primary/90"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Link href="/register">Get Started</Link>
-                  </Button>
-                </div>
-              )}
+              {/* Mobile CTA Buttons */}
+              <div className="p-6 border-t border-border space-y-3">
+                <Button 
+                  variant="outline"
+                  size="lg"
+                  asChild
+                  className="w-full font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Link href="/contact">Contact Us</Link>
+                </Button>
+                <Button 
+                  size="lg"
+                  asChild
+                  className="w-full font-medium bg-primary hover:bg-primary/90"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Link href="/cars">Shop Now</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>

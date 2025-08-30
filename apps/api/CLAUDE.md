@@ -1,582 +1,129 @@
-# CLAUDE.md - Style Nation API with Supabase Authentication
+# CLAUDE.md - Style Nation API Architecture
 
-## API Structure & Implementation Status
+## Overview
 
-This file documents the current state and implementation details of the Style Nation NestJS API with Supabase authentication.
+The Style Nation API is a production-ready NestJS backend that serves both public car browsing endpoints and admin-only management functionality. It implements a comprehensive car dealership system with authentication, car management, customer inquiries, and file storage capabilities.
 
-## 🔐 Supabase Authentication Implementation
+## Architecture Philosophy
 
-### Authentication Strategy
+### Three-Tier Architecture
+- **Controllers**: HTTP request handling and validation
+- **Services**: Business logic and data processing  
+- **Database**: Prisma ORM with PostgreSQL
 
-The API uses Supabase JWT tokens for authentication following this pattern:
+### Mixed Authentication Strategy
+- **Public Endpoints**: Open access for car browsing and inquiries
+- **Admin Endpoints**: JWT-protected for administrative operations
+- **No User Registration**: Admin-only system, no public user accounts
 
-#### JWT Strategy (`/auth/strategies/supabase.strategy.ts`)
-```typescript
-import { Injectable } from '@nestjs/common'
-import { PassportStrategy } from '@nestjs/passport'
-import { ExtractJwt, Strategy } from 'passport-jwt'
-import { ConfigService } from '@nestjs/config'
+### Core Design Patterns
+- **Entity Constructor Pattern**: Proper nested relation handling
+- **Global Exception Handling**: Unified error responses
+- **Decorator-Based Security**: Fine-grained access control
+- **DTO Validation**: Comprehensive input sanitization
+- **Modular Architecture**: Feature-based organization
 
-@Injectable()
-export class SupabaseStrategy extends PassportStrategy(Strategy) {
-  public constructor(private readonly configService: ConfigService) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'),
-    })
-  }
-
-  async validate(payload: any): Promise<any> {
-    return payload
-  }
-}
-```
-
-#### JWT Auth Guard (`/auth/guards/jwt.auth.guard.ts`)
-```typescript
-import { ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { AuthGuard } from '@nestjs/passport';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-
-@Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private reflector: Reflector) {
-    super();
-  }
-
-  canActivate(context: ExecutionContext) {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) {
-      return true;
-    }
-    return super.canActivate(context);
-  }
-}
-```
-
-### Authentication Decorators
-
-#### Public Decorator (`/auth/decorators/public.decorator.ts`)
-```typescript
-import { SetMetadata } from '@nestjs/common';
-
-export const IS_PUBLIC_KEY = 'isPublic';
-export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
-```
-
-#### Roles Decorator (`/auth/decorators/roles.decorator.ts`)
-```typescript
-import { SetMetadata } from '@nestjs/common';
-
-export const ROLES_KEY = 'roles';
-export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
-```
-
-#### Current User Decorator (`/auth/decorators/current-user.decorator.ts`)
-```typescript
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-
-export const CurrentUser = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.user;
-  },
-);
-```
-
-### Protected Route Example
-
-The API includes a protected route example:
-
-```typescript
-@Get('/protected')
-@UseGuards(JwtAuthGuard)
-async protected(@Req() req) {
-  return {
-    "message": "AuthGuard works 🎉",
-    "authenticated_user": req.user
-  };
-}
-```
-
-## 📁 Current Project Structure
+## Project Structure
 
 ```
 apps/api/
 ├── src/
-│   ├── auth/                          ✅ COMPLETE
-│   │   ├── decorators/
-│   │   │   ├── current-user.decorator.ts
-│   │   │   ├── public.decorator.ts
-│   │   │   └── roles.decorator.ts
-│   │   ├── dto/
-│   │   │   └── login.dto.ts
-│   │   ├── entities/
-│   │   │   └── auth.entity.ts
-│   │   ├── auth.controller.ts
-│   │   ├── auth.module.ts
-│   │   ├── auth.service.ts
-│   │   ├── jwt-auth.guard.ts
-│   │   ├── jwt.strategy.ts
-│   │   └── roles.guard.ts
+│   ├── controllers/                    # HTTP Request Handlers
+│   │   ├── app.controller.ts           # Health checks & system info
+│   │   ├── auth.controller.ts          # Admin authentication
+│   │   ├── admin.controller.ts         # Admin management
+│   │   ├── cars.controller.ts          # Car CRUD operations
+│   │   ├── inquiries.controller.ts     # Customer inquiries
+│   │   └── upload.controller.ts        # File upload handling
 │   │
-│   ├── users/                         ✅ COMPLETE
-│   │   ├── dto/
-│   │   │   ├── change-password.dto.ts
-│   │   │   ├── create-user.dto.ts
-│   │   │   └── update-user.dto.ts
-│   │   ├── entities/
-│   │   │   └── user.entity.ts
-│   │   ├── users.controller.ts
-│   │   ├── users.module.ts
-│   │   └── users.service.ts
+│   ├── services/                       # Business Logic Layer
+│   │   ├── app.service.ts              # Application services
+│   │   ├── auth.service.ts             # JWT & authentication
+│   │   ├── admin.service.ts            # Admin management
+│   │   ├── cars.service.ts             # Car business logic
+│   │   └── inquiries.service.ts        # Inquiry management
 │   │
-│   ├── prisma/                        ✅ COMPLETE
-│   │   ├── prisma.module.ts
-│   │   └── prisma.service.ts
+│   ├── entities/                       # Data Models with Serialization
+│   │   ├── admin.entity.ts             # Admin user model
+│   │   ├── auth.entity.ts              # Authentication response
+│   │   ├── car.entity.ts               # Car listing model
+│   │   ├── car-image.entity.ts         # Car image model
+│   │   └── inquiry.entity.ts           # Customer inquiry model
 │   │
-│   ├── cars/                          ⏳ TODO
-│   ├── inquiries/                     ⏳ TODO
-│   ├── facebook/                      ⏳ TODO
+│   ├── dto/                           # Data Transfer Objects
+│   │   ├── auth/                      # Authentication DTOs
+│   │   │   ├── login.dto.ts
+│   │   │   └── refresh-token.dto.ts
+│   │   ├── cars/                      # Car management DTOs
+│   │   │   ├── create-car.dto.ts
+│   │   │   ├── update-car.dto.ts
+│   │   │   └── search-cars.dto.ts
+│   │   └── upload/                    # File & inquiry DTOs
+│   │       ├── upload-image.dto.ts
+│   │       ├── create-inquiry.dto.ts
+│   │       ├── update-inquiry.dto.ts
+│   │       └── search-inquiries.dto.ts
 │   │
-│   ├── app.controller.ts              ✅ COMPLETE
-│   ├── app.module.ts                  ✅ COMPLETE
-│   ├── app.service.ts                 ✅ COMPLETE
-│   └── main.ts                        ✅ COMPLETE
+│   ├── guards/                        # Authentication & Authorization
+│   │   ├── jwt-auth.guard.ts          # JWT token validation
+│   │   ├── local-auth.guard.ts        # Login credential validation
+│   │   └── roles.guard.ts             # Role-based access control
+│   │
+│   ├── decorators/                    # Custom Decorators
+│   │   ├── public.decorator.ts        # Skip authentication
+│   │   ├── roles.decorator.ts         # Role requirements
+│   │   └── current-admin.decorator.ts # Extract current admin
+│   │
+│   ├── strategies/                    # Passport Authentication
+│   │   ├── jwt.strategy.ts            # JWT token strategy
+│   │   └── local.strategy.ts          # Username/password strategy
+│   │
+│   ├── prisma/                        # Database Layer
+│   │   ├── prisma.service.ts          # Database connection
+│   │   ├── prisma.module.ts           # Global database module
+│   │   └── prisma-client-exception.filter.ts # DB error handling
+│   │
+│   ├── storage/                       # File Storage Service
+│   │   ├── storage.service.ts         # Supabase storage integration
+│   │   └── storage.module.ts          # Storage module config
+│   │
+│   ├── modules/                       # Feature Modules
+│   │   └── inquiries.module.ts        # Inquiry feature module
+│   │
+│   ├── app.module.ts                  # Root application module
+│   └── main.ts                        # Application bootstrap
 │
-├── prisma/                            ✅ COMPLETE
-│   ├── schema.prisma
-│   └── seed.ts
+├── prisma/                            # Database Schema & Migrations
+│   ├── schema.prisma                  # Complete data model
+│   └── seed.ts                        # Demo data seeder
 │
-├── .env                               ✅ COMPLETE
-├── .env.example                       ✅ COMPLETE
-├── .gitignore                         ✅ COMPLETE
-├── nest-cli.json                      ✅ COMPLETE
-├── package.json                       ✅ COMPLETE
-├── tsconfig.json                      ✅ COMPLETE
-├── tsconfig.build.json                ✅ COMPLETE
-├── TASKS.md                           ✅ COMPLETE
-└── CLAUDE.md                          ✅ COMPLETE (this file)
+├── test/                             # Testing Infrastructure
+│   ├── e2e/                          # End-to-end tests
+│   ├── unit/                         # Unit tests
+│   ├── utils/                        # Test utilities
+│   │   ├── test.helper.ts             # Common test functions
+│   │   └── test-data.factory.ts       # Mock data generation
+│   └── setup.ts                      # Test environment setup
+│
+├── docs/                             # API Documentation
+│   ├── architecture.md               # System architecture
+│   └── security.md                   # Security guidelines
+│
+├── .env                              # Environment configuration
+├── .env.example                      # Environment template
+├── package.json                      # Dependencies & scripts
+├── tsconfig.json                     # TypeScript configuration
+├── jest.config.js                    # Jest test configuration
+├── CLAUDE.md                         # This documentation file
+└── PROMPT.md                         # Development prompts
 ```
 
-## 🔐 Authentication Implementation
+## Core Implementation Patterns
 
-### JWT Strategy
-- **Secret**: Configurable via `JWT_SECRET` environment variable
-- **Expiration**: Configurable via `JWT_EXPIRES_IN` (default: 7d)
-- **Token Format**: Bearer token in Authorization header
-- **Strategy**: passport-jwt with extraction from auth header
+### 1. Entity Constructor Pattern
 
-### Guards & Decorators
-- **JwtAuthGuard**: Global authentication guard (applied to all routes by default)
-- **RolesGuard**: Role-based authorization guard
-- **@Public()**: Decorator to exclude routes from authentication
-- **@Roles(Role.ADMIN)**: Decorator for admin-only endpoints
-- **@CurrentUser()**: Decorator to inject authenticated user into controller methods
+All entity classes follow this pattern for handling nested relations:
 
-### Password Security
-- **Hashing**: bcrypt with 10 rounds
-- **Validation**: Minimum 6 characters required
-- **Change Password**: Requires current password verification
-
-## 👥 User Management
-
-### User Model Structure
-```typescript
-User {
-  id: string (UUID)
-  email: string (unique)
-  password: string (hashed)
-  role: Role (USER | ADMIN)
-  profile?: Profile (optional relation)
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-
-Profile {
-  id: string (UUID)
-  userId: string (FK to User)
-  firstName?: string
-  lastName?: string
-  phone?: string
-  avatar?: string
-}
-```
-
-### Available Endpoints
-```
-POST   /api/users              (Admin) Create user
-POST   /api/users/register     (Public) User registration  
-GET    /api/users              (Admin) List all users
-GET    /api/users/me           (Auth) Current user profile
-GET    /api/users/:id          (Admin) Get user by ID
-PATCH  /api/users/me           (Auth) Update own profile
-PATCH  /api/users/:id          (Admin) Update user by ID
-POST   /api/users/change-password (Auth) Change password
-DELETE /api/users/:id          (Admin) Delete user
-```
-
-## 🔑 Environment Configuration
-
-### Required Environment Variables
-```bash
-# Core
-NODE_ENV=development
-PORT=3001
-
-# Database (Supabase)
-DATABASE_URL="postgresql://..."
-DIRECT_URL="postgresql://..."  # For migrations
-
-# Authentication
-JWT_SECRET="your-secret-key"
-JWT_EXPIRES_IN="7d"
-
-# Supabase
-SUPABASE_URL="https://project.supabase.co"
-SUPABASE_SERVICE_KEY="eyJ..."
-SUPABASE_JWT_SECRET="your-supabase-jwt-secret"
-
-# Security
-CORS_ORIGINS="http://localhost:3000"
-API_RATE_LIMIT=100
-```
-
-## 🗃️ Database Schema
-
-### Core Models Implemented
-- ✅ **User**: Authentication and profile management
-- ✅ **Profile**: User profile information (linked to User)
-- ✅ **Car**: Vehicle listings (schema defined, module pending)
-- ✅ **CarImage**: Car images (schema defined, module pending)
-- ✅ **Inquiry**: Customer inquiries (schema defined, module pending)
-
-### Database Indexes
-Performance indexes are configured for:
-- Car status, price, make/model, year, creation date
-- Inquiry car ID and status
-- User email uniqueness
-
-## 🚀 API Features
-
-### Global Features
-- ✅ **CORS**: Configurable origins
-- ✅ **Validation**: Global validation pipe with whitelist
-- ✅ **Serialization**: Class-transformer for response serialization
-- ✅ **Swagger**: Complete API documentation at `/api/docs`
-- ✅ **Health Checks**: `/api` and `/api/health` endpoints
-- ✅ **Security**: Helmet security headers
-- ✅ **Compression**: Response compression enabled
-
-### Swagger Documentation
-- **URL**: `http://localhost:3001/api/docs`
-- **Features**: 
-  - Interactive API testing
-  - JWT authentication support
-  - Request/response schemas
-  - Grouped endpoints by feature
-  - Example requests and responses
-
-## 📱 API Usage Examples
-
-### Authentication
-```bash
-# Login
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@stylenation.com","password":"admin123"}'
-
-# Response
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": "clm123...",
-    "email": "admin@stylenation.com",
-    "role": "ADMIN"
-  }
-}
-
-# Use token in subsequent requests
-curl -X GET http://localhost:3001/api/users/me \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-```
-
-### User Registration
-```bash
-curl -X POST http://localhost:3001/api/users/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "password123",
-    "firstName": "John",
-    "lastName": "Doe",
-    "phone": "+1-555-0123"
-  }'
-```
-
-## 🧑‍💻 Development Commands
-
-```bash
-# Install dependencies
-npm install
-
-# Database setup
-npm run prisma:generate    # Generate Prisma client
-npm run prisma:migrate     # Run migrations  
-npm run prisma:seed        # Seed with demo data
-npm run prisma:studio      # Open Prisma Studio
-
-# Development
-npm run start:dev          # Start with hot reload
-npm run build              # Build for production
-npm run start:prod         # Start production build
-
-# Testing
-npm run test              # Run unit tests
-npm run test:e2e          # Run e2e tests
-npm run test:cov          # Run with coverage
-```
-
-## 🔄 Development Workflow
-
-### Adding New Modules
-1. Generate module: `nest g resource module-name`
-2. Create DTOs with validation decorators
-3. Create entity classes with Swagger documentation
-4. Implement service with Prisma integration
-5. Create controller with proper guards and decorators
-6. Add module to AppModule imports
-7. Update this documentation
-
-### Database Changes
-1. Modify `prisma/schema.prisma`
-2. Run `npm run prisma:migrate`
-3. Update seed file if needed
-4. Generate new Prisma client: `npm run prisma:generate`
-
-## 🐛 Common Issues & Solutions
-
-### Authentication Issues
-- **401 Unauthorized**: Check JWT token format (Bearer token)
-- **403 Forbidden**: Verify user has required role (ADMIN for admin endpoints)
-- **Token Expired**: Login again to get fresh token
-
-### Database Issues
-- **Connection Failed**: Check DATABASE_URL format and database availability
-- **Migration Issues**: Ensure database is accessible and migrations are up to date
-- **Seed Failures**: Check for unique constraint violations
-
-### Development Issues
-- **Module Not Found**: Ensure paths are configured correctly in tsconfig.json
-- **Validation Errors**: Check DTO definitions and class-validator decorators
-- **CORS Errors**: Update CORS_ORIGINS environment variable
-
-## 🎯 Next Implementation Priorities
-
-1. **Cars Module** (High Priority)
-   - Complete CRUD operations
-   - Search and filtering
-   - Image management endpoints
-
-2. **Inquiries Module** (Medium Priority)
-   - Customer inquiry submission
-   - Admin inquiry management
-   - Email notifications
-
-3. **Facebook Integration** (Medium Priority)
-   - Auto-posting to Facebook
-   - Post management
-   - Settings configuration
-
-4. **Advanced Features** (Low Priority)
-   - Analytics endpoints
-   - Background job processing
-   - Advanced caching
-
-## 🎨 NestJS Best Practices Implementation
-
-### Exception Handling
-Following the NestJS tutorial patterns, we implement proper exception handling:
-
-#### Prisma Exception Filter
-```typescript
-// src/prisma-client-exception.filter.ts
-@Catch(Prisma.PrismaClientKnownRequestError)
-export class PrismaClientExceptionFilter extends BaseExceptionFilter {
-  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
-    switch (exception.code) {
-      case 'P2002': return 409 // Unique constraint violation
-      case 'P2025': return 404 // Record not found
-      case 'P2014': return 400 // Relation violation
-      case 'P2003': return 400 // Foreign key constraint violation
-    }
-  }
-}
-```
-
-Applied globally in `main.ts`:
-```typescript
-const { httpAdapter } = app.get(HttpAdapterHost);
-app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
-```
-
-### Entity Classes with Proper Serialization
-
-#### Entity Constructor Pattern
-All entity classes follow this pattern for handling relations:
-```typescript
-export class UserEntity implements User {
-  constructor({ profile, ...data }: Partial<UserEntity>) {
-    Object.assign(this, data);
-    
-    // Handle nested relations
-    if (profile) {
-      this.profile = new ProfileEntity(profile);
-    }
-  }
-
-  @Exclude()
-  password: string; // Excluded from API responses
-  
-  @ApiProperty({ type: ProfileEntity })
-  profile?: ProfileEntity;
-}
-```
-
-#### Global Configuration
-```typescript
-// main.ts - Required for entity serialization
-app.useGlobalInterceptors(
-  new ClassSerializerInterceptor(app.get(Reflector))
-);
-```
-
-### Validation and Transformation
-
-#### Global Validation Pipeline
-```typescript
-app.useGlobalPipes(
-  new ValidationPipe({
-    whitelist: true,           // Strip non-whitelisted properties
-    forbidNonWhitelisted: true, // Throw error for extra properties
-    transform: true,            // Transform payloads to DTO instances
-    transformOptions: {
-      enableImplicitConversion: true,
-    },
-  })
-);
-```
-
-#### DTO Validation Examples
-```typescript
-export class CreateUserDto {
-  @IsEmail()
-  @IsNotEmpty()
-  @ApiProperty({ example: 'user@example.com' })
-  email: string;
-
-  @IsString()
-  @MinLength(6)
-  @ApiProperty({ minLength: 6 })
-  password: string;
-
-  @IsEnum(Role)
-  @IsOptional()
-  @ApiProperty({ enum: Role, default: Role.USER })
-  role?: Role = Role.USER;
-}
-```
-
-### Service Layer Patterns
-
-#### Proper Error Handling in Services
-```typescript
-async findOne(id: string): Promise<UserEntity> {
-  const user = await this.prisma.user.findUnique({
-    where: { id },
-    include: { profile: true }, // Include relations
-  });
-
-  if (!user) {
-    throw new NotFoundException(`User with ID ${id} not found`);
-  }
-
-  return new UserEntity(user); // Always return entity instances
-}
-```
-
-#### Relational Data Handling
-```typescript
-// Always include related data when needed
-const user = await this.prisma.user.create({
-  data: {
-    email,
-    password: hashedPassword,
-    profile: firstName || lastName || phone ? {
-      create: { firstName, lastName, phone }
-    } : undefined,
-  },
-  include: { profile: true }, // Include for complete response
-});
-
-return new UserEntity(user); // Proper entity serialization
-```
-
-### Controller Best Practices
-
-#### Proper Type Annotations
-```typescript
-@Post()
-@ApiResponse({ status: 201, type: UserEntity })
-async create(@Body() createUserDto: CreateUserDto): Promise<UserEntity> {
-  return this.usersService.create(createUserDto);
-}
-
-// Use ParseIntPipe for integer IDs (not needed for UUIDs)
-@Get(':id')
-findOne(@Param('id', ParseIntPipe) id: number) { /* ... */ }
-```
-
-#### Authentication & Authorization
-```typescript
-@Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard) // Global guards
-export class UsersController {
-  
-  @Post()
-  @Roles(Role.ADMIN) // Role-based access
-  @ApiBearerAuth('JWT-auth') // Swagger auth
-  async create(@Body() dto: CreateUserDto): Promise<UserEntity> { /* ... */ }
-  
-  @Post('register')
-  @Public() // Exclude from authentication
-  async register(@Body() dto: CreateUserDto): Promise<UserEntity> { /* ... */ }
-}
-```
-
-### Module Implementation Patterns
-
-#### Standard Module Structure
-```typescript
-@Module({
-  controllers: [UsersController],
-  providers: [UsersService],
-  imports: [PrismaModule], // Always import PrismaModule
-  exports: [UsersService], // Export services if needed by other modules
-})
-export class UsersModule {}
-```
-
-### Future Module Implementation Guidelines
-
-When creating new modules (Cars, Inquiries, etc.), follow these patterns:
-
-#### Entity Classes
 ```typescript
 export class CarEntity implements Car {
   constructor({ images, creator, ...data }: Partial<CarEntity>) {
@@ -589,596 +136,781 @@ export class CarEntity implements Car {
     
     // Handle single relations
     if (creator) {
-      this.creator = new UserEntity(creator);
+      this.creator = new AdminEntity(creator);
     }
   }
 
+  @Exclude()
+  sensitiveField: string; // Excluded from API responses
+  
   @ApiProperty({ type: [CarImageEntity] })
   images?: CarImageEntity[];
 
-  @ApiProperty({ type: UserEntity })
-  creator?: UserEntity;
+  @ApiProperty({ type: AdminEntity })
+  creator?: AdminEntity;
 }
 ```
 
-#### Service Methods with Relations
-```typescript
-async findOne(id: string): Promise<CarEntity> {
-  const car = await this.prisma.car.findUnique({
-    where: { id },
-    include: {
-      images: true,
-      creator: { include: { profile: true } }, // Nested includes
-      inquiries: { include: { user: true } },
-    },
-  });
+### 2. Service Layer Patterns
 
-  if (!car) {
-    throw new NotFoundException(`Car with ID ${id} not found`);
+Services implement business logic with proper error handling:
+
+```typescript
+@Injectable()
+export class CarsService {
+  constructor(private prisma: PrismaService) {}
+
+  async findOne(id: string): Promise<CarEntity> {
+    const car = await this.prisma.car.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        creator: true,
+      },
+    });
+
+    if (!car) {
+      throw new NotFoundException(`Car with ID ${id} not found`);
+    }
+
+    return new CarEntity(car);
+  }
+}
+```
+
+### 3. DTO Validation Pattern
+
+All DTOs use class-validator decorators:
+
+```typescript
+export class CreateCarDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: 'Toyota' })
+  make: string;
+
+  @IsNumber()
+  @Min(1900)
+  @Max(new Date().getFullYear() + 1)
+  @ApiProperty({ example: 2023 })
+  year: number;
+
+  @IsDecimal({ decimal_digits: '0,2' })
+  @ApiProperty({ example: 28500.00 })
+  price: number;
+}
+```
+
+### 4. Controller Security Pattern
+
+Controllers use decorators for authentication and authorization:
+
+```typescript
+@Controller('admin/cars')
+@UseGuards(JwtAuthGuard) // Global admin authentication
+@ApiBearerAuth('JWT-auth') // Swagger auth documentation
+export class CarsController {
+  
+  @Get()
+  @Public() // Override global auth for public endpoint
+  async findAll(@Query() searchDto: SearchCarsDto) {
+    return this.carsService.findAll(searchDto);
+  }
+  
+  @Post()
+  @Roles(Role.ADMIN) // Admin-only endpoint
+  async create(@Body() createDto: CreateCarDto) {
+    return this.carsService.create(createDto);
+  }
+}
+```
+
+## Database Architecture
+
+### Schema Overview
+
+```prisma
+// Admin users - no public user accounts
+model Admin {
+  id                  String @id @default(uuid())
+  name                String?
+  email               String @unique
+  password            String
+  role                Role   @default(ADMIN)
+  failedLoginAttempts Int    @default(0)
+  refreshToken        String?
+  createdCars         Car[]  @relation("CreatedBy")
+}
+
+// Car listings with comprehensive details
+model Car {
+  id               String        @id @default(uuid())
+  make             String
+  model            String
+  year             Int
+  price            Decimal       @db.Decimal(10, 2)
+  vin              String        @unique
+  condition        Condition
+  transmissionType Transmission
+  fuelType         FuelType
+  bodyType         BodyType
+  features         String[]
+  description      String        @db.Text
+  status           ListingStatus @default(AVAILABLE)
+  featured         Boolean       @default(false)
+  featuredUntil    DateTime?
+  viewCount        Int           @default(0)
+  images           CarImage[]
+  inquiries        Inquiry[]
+  creator          Admin         @relation("CreatedBy")
+
+  // Performance indexes
+  @@index([status])
+  @@index([featured])
+  @@index([price])
+  @@index([make, model])
+}
+
+// Car images with ordering
+model CarImage {
+  id        String  @id @default(uuid())
+  carId     String
+  url       String
+  isPrimary Boolean @default(false)
+  order     Int
+  car       Car     @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+
+// Customer inquiries (public submissions)
+model Inquiry {
+  id        String        @id @default(uuid())
+  carId     String
+  name      String
+  email     String
+  phone     String?
+  message   String        @db.Text
+  status    InquiryStatus @default(NEW)
+  car       Car           @relation(fields: [carId], references: [id])
+}
+```
+
+### Key Design Decisions
+
+1. **Admin-Only Users**: No public user registration, only admin accounts
+2. **Soft Deletes**: Cars use status field (INACTIVE) rather than hard deletion
+3. **Image Ordering**: Car images have explicit order for consistent display
+4. **UUID Primary Keys**: For security and scalability
+5. **Performance Indexes**: Strategic indexing on query-heavy fields
+
+## API Endpoints Architecture
+
+### Public Endpoints (No Authentication)
+
+#### Car Browsing
+```
+GET    /api/cars                    # List cars with filters & pagination
+GET    /api/cars/featured           # Get featured cars
+GET    /api/cars/popular-makes      # Get popular manufacturers
+GET    /api/cars/:id               # Get car details
+POST   /api/cars/:id/views         # Increment view count
+```
+
+#### Customer Contact
+```
+POST   /api/inquiries              # Submit car inquiry
+```
+
+#### System Health
+```
+GET    /api/health                 # API health check
+```
+
+### Admin Endpoints (JWT Authentication Required)
+
+#### Authentication
+```
+POST   /api/auth/login             # Admin login (returns JWT)
+POST   /api/auth/refresh           # Refresh access token
+POST   /api/auth/logout            # Invalidate refresh token
+```
+
+#### Car Management
+```
+POST   /api/cars                   # Create car listing
+PATCH  /api/cars/:id              # Update car listing
+DELETE /api/cars/:id              # Soft delete car
+DELETE /api/cars/:id/hard         # Permanently delete car
+POST   /api/cars/:id/images       # Upload car images
+PATCH  /api/cars/images/:imageId   # Update image details
+DELETE /api/cars/images/:imageId   # Delete car image
+PATCH  /api/cars/:id/feature      # Feature car listing
+DELETE /api/cars/:id/feature      # Unfeature car listing
+GET    /api/cars/admin/statistics  # Car statistics
+```
+
+#### Inquiry Management
+```
+GET    /api/inquiries              # List all inquiries
+GET    /api/inquiries/statistics   # Inquiry statistics
+GET    /api/inquiries/recent       # Recent inquiries
+GET    /api/inquiries/:id          # Get inquiry details
+PATCH  /api/inquiries/:id          # Update inquiry status
+DELETE /api/inquiries/:id          # Delete inquiry
+```
+
+#### File Upload
+```
+POST   /api/upload/images          # Upload images to storage
+```
+
+## Authentication & Security
+
+### JWT Implementation
+
+```typescript
+// JWT Strategy
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(configService: ConfigService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get('JWT_SECRET'),
+    });
   }
 
-  return new CarEntity(car);
+  async validate(payload: any) {
+    return {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+    };
+  }
 }
 ```
 
-#### Search and Filtering
-```typescript
-async findAll(searchDto: SearchCarsDto): Promise<CarEntity[]> {
-  const cars = await this.prisma.car.findMany({
-    where: {
-      make: searchDto.make ? { contains: searchDto.make, mode: 'insensitive' } : undefined,
-      price: {
-        gte: searchDto.minPrice,
-        lte: searchDto.maxPrice,
-      },
-      status: ListingStatus.AVAILABLE,
-    },
-    include: { images: true, creator: true },
-    orderBy: { createdAt: 'desc' },
-    take: searchDto.limit || 20,
-    skip: searchDto.offset || 0,
-  });
+### Security Features
 
-  return cars.map(car => new CarEntity(car));
+1. **JWT Access + Refresh Tokens**: Secure token rotation
+2. **Failed Login Tracking**: Account lockout after 5 failed attempts
+3. **Rate Limiting**: Global throttling (100 req/min, 5/min for login)
+4. **Input Validation**: Comprehensive DTO validation
+5. **Output Serialization**: Sensitive data exclusion
+6. **CORS Configuration**: Restricted origins
+7. **Helmet Security**: HTTP security headers
+
+### Global Guards Configuration
+
+```typescript
+// Applied in app.module.ts
+{
+  provide: APP_GUARD,
+  useClass: ThrottlerGuard, // Rate limiting
+},
+{
+  provide: APP_GUARD,
+  useClass: JwtAuthGuard,   // JWT authentication (default)
 }
 ```
 
-### Testing Patterns
+## Testing Architecture
 
-#### Unit Test Example
+### Testing Strategy
+
+- **Unit Tests**: Isolated component testing with mocks
+- **Integration Tests**: Module interaction testing
+- **E2E Tests**: Full request/response cycle testing
+- **Coverage Target**: 80% minimum, 90% for services
+
+### Unit Test Pattern
+
 ```typescript
-describe('UsersService', () => {
+describe('CarsService', () => {
+  let service: CarsService;
+  let prismaService: PrismaService;
+
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        UsersService,
+        CarsService,
         { provide: PrismaService, useValue: mockPrismaService },
       ],
     }).compile();
+
+    service = module.get<CarsService>(CarsService);
+    prismaService = module.get<PrismaService>(PrismaService);
   });
 
-  it('should return UserEntity instance', async () => {
-    const result = await service.findOne('user-id');
-    expect(result).toBeInstanceOf(UserEntity);
-    expect(result.password).toBeUndefined(); // Should be excluded
+  it('should return CarEntity with proper serialization', async () => {
+    const mockCar = TestDataFactory.createCar();
+    jest.spyOn(prismaService.car, 'findUnique').mockResolvedValue(mockCar);
+
+    const result = await service.findOne('car-id');
+
+    expect(result).toBeInstanceOf(CarEntity);
+    expect(result.creator).toBeInstanceOf(AdminEntity);
   });
 });
 ```
 
-### Performance Optimization
+### E2E Test Pattern
 
-#### Database Indexes
-Ensure proper indexes in Prisma schema:
-```prisma
-model Car {
-  // Performance indexes
-  @@index([status])
-  @@index([price])
-  @@index([make, model])
-  @@index([createdAt(sort: Desc)])
+```typescript
+describe('Cars (e2e)', () => {
+  let app: INestApplication;
+  let authToken: string;
+
+  beforeAll(async () => {
+    app = await TestHelper.createTestApp();
+    authToken = await TestHelper.getAuthToken(app, {
+      email: 'admin@test.com',
+      password: 'admin123'
+    });
+  });
+
+  it('/api/cars (POST) should create car', () => {
+    return request(app.getHttpServer())
+      .post('/api/cars')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(TestDataFactory.createCarDto())
+      .expect(201)
+      .expect(res => {
+        expect(res.body).toHaveProperty('id');
+        expect(res.body.make).toBe('Toyota');
+      });
+  });
+});
+```
+
+### Test Utilities
+
+```typescript
+// TestHelper provides common testing functions
+export class TestHelper {
+  static async cleanDatabase(prisma: PrismaService): Promise<void>
+  static async createTestApp(): Promise<INestApplication>
+  static async getAuthToken(app: INestApplication, credentials): Promise<string>
+  static createMockPrismaService()
+  static expectValidationError(response: Response, field: string)
+  static expectUnauthorized(response: Response)
+}
+
+// TestDataFactory generates mock data
+export class TestDataFactory {
+  static createCar(overrides?: Partial<Car>): Car
+  static createAdmin(overrides?: Partial<Admin>): Admin
+  static createInquiry(overrides?: Partial<Inquiry>): Inquiry
 }
 ```
 
-#### Selective Field Loading
+## Development Workflow
+
+### Adding New Features
+
+1. **Create Module**: `nest g resource feature-name`
+2. **Define DTOs**: Add validation and Swagger documentation
+3. **Create Entity**: Implement constructor pattern and serialization
+4. **Implement Service**: Add business logic with error handling
+5. **Create Controller**: Add endpoints with proper guards
+6. **Write Tests**: Unit and E2E test coverage
+7. **Update Documentation**: API docs and this file
+
+### Service Implementation Pattern
+
 ```typescript
-// Only select needed fields for performance
+@Injectable()
+export class FeatureService {
+  constructor(private prisma: PrismaService) {}
+
+  async create(createDto: CreateFeatureDto): Promise<FeatureEntity> {
+    // Validate business rules
+    await this.validateBusinessRules(createDto);
+
+    // Create with relations
+    const feature = await this.prisma.feature.create({
+      data: createDto,
+      include: { relations: true },
+    });
+
+    // Return entity instance
+    return new FeatureEntity(feature);
+  }
+
+  private async validateBusinessRules(dto: CreateFeatureDto): Promise<void> {
+    // Custom validation logic
+    if (await this.isDuplicate(dto.uniqueField)) {
+      throw new ConflictException('Resource already exists');
+    }
+  }
+}
+```
+
+### Controller Implementation Pattern
+
+```typescript
+@Controller('features')
+@ApiTags('features')
+export class FeatureController {
+  constructor(private readonly featureService: FeatureService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create new feature' })
+  @ApiResponse({ status: 201, type: FeatureEntity })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  async create(@Body() createDto: CreateFeatureDto): Promise<FeatureEntity> {
+    return this.featureService.create(createDto);
+  }
+}
+```
+
+## Configuration & Environment
+
+### Required Environment Variables
+
+```bash
+# Core Configuration
+NODE_ENV=development
+PORT=3001
+
+# Database (Supabase PostgreSQL)
+DATABASE_URL="postgresql://postgres.xxx:password@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+DIRECT_URL="postgresql://postgres.xxx:password@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+
+# JWT Authentication
+JWT_SECRET="your-256-bit-secret-key"
+JWT_EXPIRES_IN="1h"
+REFRESH_TOKEN_EXPIRES_IN="7d"
+
+# CORS Configuration
+CORS_ORIGINS="http://localhost:3000,http://localhost:3002"
+
+# Rate Limiting
+THROTTLE_TTL=60000      # 60 seconds
+THROTTLE_LIMIT=100      # 100 requests per TTL
+
+# File Storage (Supabase)
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_KEY="your_supabase_service_key"
+SUPABASE_BUCKET="car-images"
+
+# Optional: Email Notifications
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+```
+
+### Bootstrap Configuration
+
+```typescript
+// main.ts - Production configuration
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // Security middleware
+  app.use(helmet());
+  app.use(compression());
+  
+  // CORS configuration
+  app.enableCors({
+    origin: configService.get('CORS_ORIGINS')?.split(','),
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  // Global prefix
+  app.setGlobalPrefix('api');
+
+  // Global pipes & interceptors
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
+  
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector))
+  );
+
+  // Exception handling
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new PrismaClientExceptionFilter(httpAdapter));
+
+  // Swagger documentation
+  const config = new DocumentBuilder()
+    .setTitle('Style Nation API')
+    .setVersion('1.0.0')
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+    }, 'JWT-auth')
+    .build();
+    
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
+  await app.listen(3001);
+}
+```
+
+## Performance Optimization
+
+### Database Optimization
+
+1. **Strategic Indexing**: Query-optimized database indexes
+2. **Selective Loading**: Only fetch required fields
+3. **Relation Optimization**: Proper include/select usage
+4. **Connection Pooling**: Supabase connection pooling
+
+```typescript
+// Optimized query example
 const cars = await this.prisma.car.findMany({
   select: {
     id: true,
     make: true,
     model: true,
+    year: true,
     price: true,
-    images: { select: { url: true, isPrimary: true } },
+    status: true,
+    images: {
+      select: { url: true, isPrimary: true },
+      where: { isPrimary: true },
+    },
   },
+  where: { status: 'AVAILABLE' },
+  orderBy: { createdAt: 'desc' },
+  take: 20,
 });
 ```
 
-### Error Handling Best Practices
+### Caching Strategy
 
-#### Common HTTP Status Codes
-- `201 Created`: Successful resource creation
-- `200 OK`: Successful retrieval/update
-- `204 No Content`: Successful deletion
-- `400 Bad Request`: Validation errors
-- `401 Unauthorized`: Authentication required
-- `403 Forbidden`: Insufficient permissions
-- `404 Not Found`: Resource not found
-- `409 Conflict`: Resource conflict (unique constraints)
+1. **Redis Caching**: Popular cars and search results
+2. **Response Caching**: Static content caching
+3. **Query Optimization**: Efficient database queries
 
-#### Validation Error Messages
+### API Performance
+
+1. **Rate Limiting**: Prevent abuse and ensure stability
+2. **Response Compression**: Reduce payload size
+3. **Validation Optimization**: Early request validation
+4. **Error Handling**: Efficient error responses
+
+## Security Best Practices
+
+### Input Validation
+
 ```typescript
-@IsString()
-@IsNotEmpty({ message: 'Title cannot be empty' })
-@MinLength(5, { message: 'Title must be at least 5 characters' })
-@ApiProperty({ minLength: 5 })
-title: string;
+// Comprehensive DTO validation
+export class CreateCarDto {
+  @IsString()
+  @IsNotEmpty()
+  @Length(1, 50)
+  @Matches(/^[a-zA-Z0-9\s\-]+$/) // Alphanumeric with spaces and hyphens
+  make: string;
+
+  @IsDecimal({ decimal_digits: '0,2' })
+  @Min(0)
+  @Max(999999.99)
+  price: number;
+
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @Length(1, 100, { each: true })
+  features: string[];
+}
 ```
 
-### Security Best Practices
+### Authentication Security
 
-#### Input Sanitization
+1. **Password Hashing**: bcrypt with 12 rounds
+2. **JWT Security**: Short-lived access tokens
+3. **Refresh Token Rotation**: Secure token refresh
+4. **Account Lockout**: Failed login attempt protection
+5. **Session Management**: Proper logout handling
+
+### Data Protection
+
+1. **Output Serialization**: Sensitive data exclusion
+2. **SQL Injection Prevention**: Prisma ORM protection
+3. **XSS Prevention**: Input sanitization
+4. **CSRF Protection**: Token-based protection
+
+## Error Handling
+
+### Global Exception Filter
+
 ```typescript
-// ValidationPipe with whitelist prevents extra fields
-app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-
-// @Exclude() prevents sensitive data exposure
-@Exclude()
-password: string;
-```
-
-#### Rate Limiting (Future Implementation)
-```typescript
-// For public endpoints
-@Throttle(10, 60) // 10 requests per minute
-@Public()
-async register() { /* ... */ }
-```
-
-## 🧪 NestJS Testing Best Practices
-
-Automated testing is essential for maintaining code quality and ensuring reliable deployments. Our testing strategy follows NestJS best practices with comprehensive unit and E2E testing.
-
-### Testing Architecture Overview
-
-#### Testing Types Implemented
-- **Unit Tests**: Test individual components (services, controllers) in isolation
-- **Integration Tests**: Test module interactions and database operations
-- **End-to-End Tests**: Test complete request/response cycles via HTTP
-
-#### Testing Tools & Framework
-- **Jest**: Test runner and assertion framework
-- **Supertest**: HTTP testing for E2E tests
-- **@nestjs/testing**: NestJS testing utilities
-- **Test Doubles**: Mocking services and dependencies
-
-### Unit Testing Patterns
-
-#### Basic Unit Test Structure
-```typescript
-import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from './users.service';
-import { PrismaService } from '../prisma/prisma.service';
-
-describe('UsersService', () => {
-  let service: UsersService;
-  let prismaService: PrismaService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UsersService,
-        {
-          provide: PrismaService,
-          useValue: {
-            user: {
-              findUnique: jest.fn(),
-              create: jest.fn(),
-              update: jest.fn(),
-              delete: jest.fn(),
-            },
-          },
-        },
-      ],
-    }).compile();
-
-    service = module.get<UsersService>(UsersService);
-    prismaService = module.get<PrismaService>(PrismaService);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-});
-```
-
-#### Auto-Mocking Strategy
-```typescript
-import { ModuleMocker, MockMetadata } from 'jest-mock';
-
-const moduleMocker = new ModuleMocker(global);
-
-describe('UsersController', () => {
-  let controller: UsersController;
-
-  beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      controllers: [UsersController],
-    })
-      .useMocker((token) => {
-        if (token === UsersService) {
-          return {
-            findAll: jest.fn().mockResolvedValue([]),
-            findOne: jest.fn().mockResolvedValue(new UserEntity({})),
-            create: jest.fn(),
-            update: jest.fn(),
-            remove: jest.fn(),
-          };
-        }
-        if (typeof token === 'function') {
-          const mockMetadata = moduleMocker.getMetadata(token) as MockMetadata<any>;
-          const Mock = moduleMocker.generateFromMetadata(mockMetadata);
-          return new Mock();
-        }
-      })
-      .compile();
-
-    controller = moduleRef.get(UsersController);
-  });
-});
-```
-
-#### Service Testing Best Practices
-```typescript
-describe('UsersService', () => {
-  describe('create', () => {
-    it('should create user with hashed password', async () => {
-      const createUserDto = {
-        email: 'test@example.com',
-        password: 'password123',
-        firstName: 'John',
-        lastName: 'Doe',
-      };
-
-      const mockUser = {
-        id: 'user-123',
-        email: createUserDto.email,
-        password: 'hashed-password',
-        role: Role.USER,
-        profile: {
-          firstName: createUserDto.firstName,
-          lastName: createUserDto.lastName,
-        },
-      };
-
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue(null);
-      jest.spyOn(prismaService.user, 'create').mockResolvedValue(mockUser);
-
-      const result = await service.create(createUserDto);
-
-      expect(result).toBeInstanceOf(UserEntity);
-      expect(result.email).toBe(createUserDto.email);
-      expect(result.password).toBeUndefined(); // Should be excluded
-      expect(prismaService.user.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          email: createUserDto.email,
-          password: expect.any(String), // Should be hashed
-        }),
-        include: { profile: true },
-      });
-    });
-
-    it('should throw ConflictException for duplicate email', async () => {
-      const createUserDto = { email: 'existing@example.com', password: 'password' };
-      
-      jest.spyOn(prismaService.user, 'findUnique').mockResolvedValue({} as any);
-
-      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
-    });
-  });
-});
-```
-
-#### Controller Testing with Guards
-```typescript
-describe('UsersController', () => {
-  beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      controllers: [UsersController],
-      providers: [
-        { provide: UsersService, useValue: mockUsersService },
-      ],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: jest.fn(() => true) })
-      .overrideGuard(RolesGuard)
-      .useValue({ canActivate: jest.fn(() => true) })
-      .compile();
-
-    controller = moduleRef.get<UsersController>(UsersController);
-  });
-});
-```
-
-### End-to-End Testing Patterns
-
-#### E2E Test Structure
-```typescript
-import * as request from 'supertest';
-import { Test } from '@nestjs/testing';
-import { AppModule } from '../src/app.module';
-import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-
-describe('Users (e2e)', () => {
-  let app: INestApplication;
-  let prismaService: PrismaService;
-  let authToken: string;
-
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleRef.createNestApplication();
-    
-    // Apply same middleware as production
-    app.useGlobalPipes(new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }));
-
-    await app.init();
-    
-    prismaService = moduleRef.get<PrismaService>(PrismaService);
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-});
-```
-
-#### Authentication Flow Testing
-```typescript
-describe('/auth/login (POST)', () => {
-  it('should login valid user and return JWT', () => {
-    return request(app.getHttpServer())
-      .post('/auth/login')
-      .send({
-        email: 'admin@stylenation.com',
-        password: 'admin123',
-      })
-      .expect(200)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('accessToken');
-        expect(res.body.user).toHaveProperty('email');
-        expect(res.body.user.password).toBeUndefined();
-      });
-  });
-
-  it('should reject invalid credentials', () => {
-    return request(app.getHttpServer())
-      .post('/auth/login')
-      .send({
-        email: 'invalid@example.com',
-        password: 'wrongpassword',
-      })
-      .expect(401);
-  });
-});
-```
-
-#### Protected Route Testing
-```typescript
-describe('/users/me (GET)', () => {
-  it('should return current user profile when authenticated', () => {
-    return request(app.getHttpServer())
-      .get('/users/me')
-      .set('Authorization', `Bearer ${authToken}`)
-      .expect(200)
-      .expect((res) => {
-        expect(res.body).toHaveProperty('id');
-        expect(res.body).toHaveProperty('email');
-        expect(res.body.password).toBeUndefined();
-      });
-  });
-
-  it('should reject unauthenticated requests', () => {
-    return request(app.getHttpServer())
-      .get('/users/me')
-      .expect(401);
-  });
-});
-```
-
-### Testing Utilities
-
-#### Mock Data Factory
-```typescript
-// test/utils/test-data.factory.ts
-export class TestDataFactory {
-  static createUser(overrides?: Partial<User>): User {
-    return {
-      id: 'test-user-id',
-      email: 'test@example.com',
-      password: 'hashed-password',
-      role: Role.USER,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      ...overrides,
-    };
-  }
-
-  static createUserWithProfile(overrides?: Partial<User & { profile: Profile }>): User & { profile: Profile } {
-    return {
-      ...TestDataFactory.createUser(overrides),
-      profile: {
-        id: 'profile-id',
-        userId: 'test-user-id',
-        firstName: 'John',
-        lastName: 'Doe',
-        phone: '+1234567890',
-        avatar: null,
-        ...overrides?.profile,
-      },
-    };
+@Catch(Prisma.PrismaClientKnownRequestError)
+export class PrismaClientExceptionFilter extends BaseExceptionFilter {
+  catch(exception: Prisma.PrismaClientKnownRequestError, host: ArgumentsHost) {
+    switch (exception.code) {
+      case 'P2002':
+        return new ConflictException('Resource already exists');
+      case 'P2025':
+        return new NotFoundException('Resource not found');
+      case 'P2003':
+        return new BadRequestException('Foreign key constraint violation');
+      default:
+        return new InternalServerErrorException('Database error');
+    }
   }
 }
 ```
 
-#### Database Testing Helpers
-```typescript
-// test/utils/test.helper.ts
-export class TestHelper {
-  static async cleanDatabase(prisma: PrismaService) {
-    // Clean up test data in proper order (respecting foreign keys)
-    await prisma.inquiry.deleteMany({});
-    await prisma.carImage.deleteMany({});
-    await prisma.car.deleteMany({});
-    await prisma.profile.deleteMany({});
-    await prisma.user.deleteMany({});
-  }
+### Validation Error Responses
 
-  static async getAuthToken(app: INestApplication, credentials: LoginDto): Promise<string> {
-    const response = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send(credentials)
-      .expect(200);
-      
-    return response.body.accessToken;
-  }
+```typescript
+// Automatic validation error formatting
+{
+  "statusCode": 400,
+  "message": [
+    "make should not be empty",
+    "year must be a number",
+    "price must be a positive number"
+  ],
+  "error": "Bad Request"
 }
 ```
 
-### Test Database Configuration
+## Development Commands
 
-#### Separate Test Database
-```typescript
-// For E2E tests, use a separate test database
-beforeAll(async () => {
-  // Switch to test database
-  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
-  
-  const moduleRef = await Test.createTestingModule({
-    imports: [AppModule],
-  }).compile();
-  
-  app = moduleRef.createNestApplication();
-  await app.init();
-});
-```
+### Daily Development
 
-### Coverage Goals and Standards
-
-#### Target Metrics
-- **Unit Tests**: 80% code coverage minimum
-- **Service Layer**: 90% coverage (critical business logic)
-- **Controller Layer**: 85% coverage (API contract validation)
-- **E2E Tests**: Cover all critical user flows
-
-#### Testing Standards
-1. **Every service method must have unit tests**
-2. **All controller endpoints must have unit tests**
-3. **Critical flows must have E2E test coverage**
-4. **Error scenarios must be tested**
-5. **Authentication and authorization must be tested**
-6. **Database operations must be tested with mocks**
-
-### Running Tests
-
-#### Development Commands
 ```bash
-# Unit tests
-npm run test                    # Run all unit tests
-npm run test:watch              # Run tests in watch mode
-npm run test:cov                # Run tests with coverage report
+# Start development server
+npm run start:dev
 
-# E2E tests  
-npm run test:e2e                # Run end-to-end tests
+# Database operations
+npm run prisma:generate    # Generate Prisma client
+npm run prisma:migrate     # Run migrations
+npm run prisma:seed        # Seed demo data
+npm run prisma:studio      # Open database GUI
 
-# Debug tests
-npm run test:debug              # Debug test execution
+# Testing
+npm run test               # Unit tests
+npm run test:watch         # Test watch mode
+npm run test:e2e          # End-to-end tests
+npm run test:cov          # Coverage report
+
+# Code quality
+npm run lint              # ESLint checking
+npm run lint:fix          # Auto-fix lint issues
+npm run format            # Prettier formatting
 ```
 
-#### CI/CD Integration
+### Production Commands
+
 ```bash
-# Production test pipeline
-npm run test                    # Unit tests must pass
-npm run test:e2e                # E2E tests must pass
-npm run test:cov                # Coverage must meet thresholds
+# Build for production
+npm run build
+
+# Start production server
+npm run start:prod
+
+# Database production operations
+npm run prisma:migrate:deploy    # Deploy migrations
+npm run prisma:seed:prod        # Seed production data
 ```
 
-### Test Organization
+## Deployment Checklist
 
-#### File Naming Conventions
-- **Unit Tests**: `*.spec.ts` (next to source files)
-- **E2E Tests**: `*.e2e-spec.ts` (in `test/` directory)
-- **Test Utilities**: `test/utils/` directory
+### Pre-Deployment
 
-#### Test Structure Guidelines
-```typescript
-describe('ClassName', () => {
-  describe('methodName', () => {
-    describe('when condition', () => {
-      it('should behavior', async () => {
-        // Arrange
-        const input = {};
-        const expected = {};
-        
-        // Act
-        const result = await method(input);
-        
-        // Assert
-        expect(result).toEqual(expected);
-      });
-    });
-  });
-});
+- [ ] All tests passing (`npm run test` & `npm run test:e2e`)
+- [ ] Environment variables configured
+- [ ] Database migrations up to date
+- [ ] Security headers configured
+- [ ] CORS origins properly set
+- [ ] Rate limiting enabled
+- [ ] Swagger documentation updated
+
+### Production Environment
+
+- [ ] SSL/TLS certificates installed
+- [ ] Database connection pool configured
+- [ ] Monitoring and logging setup
+- [ ] Error reporting (Sentry) configured
+- [ ] Performance monitoring enabled
+- [ ] Backup strategy implemented
+- [ ] Health check endpoints working
+
+### Security Verification
+
+- [ ] JWT secrets properly configured
+- [ ] No secrets in code repository
+- [ ] Input validation comprehensive
+- [ ] Authentication working correctly
+- [ ] Authorization rules enforced
+- [ ] File upload restrictions in place
+
+## Troubleshooting
+
+### Common Issues
+
+#### Database Connection Errors
+```bash
+# Check environment variables
+echo $DATABASE_URL
+
+# Test connection
+npm run prisma:studio
+
+# Reset database (development only)
+npm run prisma:migrate:reset
 ```
 
-### Mock Strategy Guidelines
+#### Authentication Issues
+```bash
+# Verify JWT configuration
+node -e "console.log(process.env.JWT_SECRET?.length)"
 
-#### When to Mock
-- **External Services**: Always mock (Prisma, HTTP clients)
-- **Complex Dependencies**: Mock for isolated testing  
-- **Database Operations**: Mock for unit tests, real DB for E2E
-- **Authentication**: Mock guards for unit tests, real auth for E2E
-
-#### Mock Implementation Examples
-```typescript
-// Prisma service mock
-const mockPrismaService = {
-  user: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  // Add other models as needed
-};
-
-// Guard mock for testing protected endpoints
-const mockJwtAuthGuard = {
-  canActivate: jest.fn().mockImplementation((context) => {
-    const req = context.switchToHttp().getRequest();
-    req.user = { id: 'test-user', role: Role.USER };
-    return true;
-  }),
-};
+# Check token expiration
+# Use jwt.io to decode and verify tokens
 ```
 
-## 📞 Support & Resources
+#### Performance Issues
+```bash
+# Check database queries
+# Enable Prisma query logging in development
+# DATABASE_URL="...?log=query"
 
-- **API Documentation**: http://localhost:3001/api/docs
+# Monitor memory usage
+node --inspect=0.0.0.0:9229 dist/main.js
+```
+
+### Development Issues
+
+1. **Module Resolution**: Ensure paths are configured in `tsconfig.json`
+2. **Circular Dependencies**: Use forward references with `forwardRef()`
+3. **Validation Errors**: Check DTO decorators and global validation pipe
+4. **Entity Serialization**: Verify constructor patterns and `@Exclude()` decorators
+
+## Resources & Documentation
+
+### API Documentation
+- **Swagger UI**: http://localhost:3001/api/docs
 - **Health Check**: http://localhost:3001/api/health
-- **Database Studio**: `npm run prisma:studio`
-- **Main Documentation**: `../../CLAUDE.md`
-- **Project Tasks**: `./TASKS.md`
+- **Prisma Studio**: `npm run prisma:studio`
+
+### External Documentation
+- [NestJS Documentation](https://docs.nestjs.com)
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [Supabase Documentation](https://supabase.com/docs)
+- [JWT.io Token Debugger](https://jwt.io)
+
+### Project Documentation
+- **Main Architecture**: `../../CLAUDE.md`
+- **Frontend Documentation**: `../../apps/web/CLAUDE.md`
+- **Admin Panel**: `../../apps/admin/CLAUDE.md`
+- **API Security**: `./docs/security.md`
+- **System Architecture**: `./docs/architecture.md`
 
 ---
 
-**Last Updated**: Enhanced with NestJS best practices
-**Status**: Production-ready patterns implemented
-**Version**: 2.0.0
+**Last Updated**: Comprehensive architecture documentation
+**Status**: Production-ready implementation
+**Version**: 3.0.0
+**Maintainer**: Style Nation Development Team

@@ -1,116 +1,104 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowUpRight } from 'lucide-react'
 import { VehicleCard } from '@/components/vehicles/vehicle-card'
+import { useFeaturedCars, useCars } from '@/lib/hooks/use-cars'
+import { formatPrice } from '@/lib/utils/price'
+import type { Car } from '@/lib/types/car'
 
 interface VehicleShowcaseProps {
   onViewAll?: () => void
   onVehicleClick?: (id: string) => void
   onBookmark?: (id: string) => void
+  initialData?: {
+    featuredCars: Car[]
+    recentCars: Car[]
+    popularCars: Car[]
+  }
 }
 
-export function VehicleShowcase({ onViewAll, onVehicleClick, onBookmark }: VehicleShowcaseProps) {
+export function VehicleShowcase({ onViewAll, onVehicleClick, onBookmark, initialData }: VehicleShowcaseProps) {
   const [activeTab, setActiveTab] = useState('Recent Cars')
 
   const tabs = ['Recent Cars', 'Featured Cars', 'Popular Cars']
 
-  // Mock data - in a real app this would come from props or API
-  const vehicles = [
-    {
-      id: '1',
-      title: 'Toyota Camry New',
-      description: '3.5 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/b3c8fd55c53ace6fc163d3baa58b19756ca515eb?width=655',
-      price: '$40,000',
-      mileage: '20 Miles',
-      fuelType: 'Petrol',
-      transmission: 'Automatic',
-      year: '2023',
-      badge: { text: 'Great Price', color: 'green' as const },
-    },
-    {
-      id: '2',
-      title: 'T-Cross – 2023',
-      description: '4.0 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/d9da5e061a7250283b0a94b9fadc0a56125eab27?width=655',
-      price: '$15,000',
-      mileage: '15 Miles',
-      fuelType: 'Petrol',
-      transmission: 'CVT',
-      year: '2023',
-    },
-    {
-      id: '3',
-      title: 'C-Class – 2023',
-      description: '4.0 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/c91381d9d0b8d8db5e00989523eff091d8004418?width=655',
-      price: '$150,000',
-      mileage: '50 Miles',
-      fuelType: 'Petrol',
-      transmission: 'Automatic',
-      year: '2023',
-    },
-    {
-      id: '4',
-      title: 'Ford Transit – 2021',
-      description: '4.0 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/584bc4fc82a8039fee4ca736af05f766c8a19cc8?width=655',
-      price: '$22,000',
-      mileage: '2500 Miles',
-      fuelType: 'Diesel',
-      transmission: 'Manual',
-      year: '2021',
-      badge: { text: 'Great Price', color: 'green' as const },
-    },
-    {
-      id: '5',
-      title: 'New GLC – 2023',
-      description: '4.0 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/98afdef903c7616c9c7905fe87a2472e7e023764?width=655',
-      price: '$95,000',
-      mileage: '50 Miles',
-      fuelType: 'Petrol',
-      transmission: 'Automatic',
-      year: '2023',
-      badge: { text: 'Low Mileage', color: 'blue' as const },
-    },
-    {
-      id: '6',
-      title: 'Audi A6 3.5 – New',
-      description: '3.5 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/1693f880832006bf630abbad3af5776f2159b2ac?width=655',
-      price: '$58,000',
-      mileage: '100 Miles',
-      fuelType: 'Petrol',
-      transmission: 'Automatic',
-      year: '2023',
-    },
-    {
-      id: '7',
-      title: 'Corolla Altis – 2023',
-      description: '3.5 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/cee703c1143bcf2ed6c24596623ddf55c7834a99?width=655',
-      price: '$45,000',
-      mileage: '15000 Miles',
-      fuelType: 'Petrol',
-      transmission: 'CVT',
-      year: '2023',
-    },
-    {
-      id: '8',
-      title: 'Ford Explorer 2023',
-      description: '3.5 D5 PowerPulse Momentum 5dr AW… Geartronic Estate',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/65fe0280a948bd2967d1e39193b8817269dbc69c?width=655',
-      price: '$35,000',
-      mileage: '10 Miles',
-      fuelType: 'Diesel',
-      transmission: 'CVT',
-      year: '2023',
-      badge: { text: 'Great Price', color: 'green' as const },
-    },
-  ]
+  // Use initial data if available, otherwise fetch from API
+  const shouldSkipFetch = !!initialData
+  
+  const { featuredCars: apiFeaturedCars, loading: featuredLoading, error: featuredError } = useFeaturedCars(shouldSkipFetch ? 0 : 8)
+  const { cars: apiRecentCars, loading: recentLoading, error: recentError } = useCars(shouldSkipFetch ? { limit: 0 } : { 
+    limit: 8, 
+    sortBy: 'newest' 
+  })
+  const { cars: apiPopularCars, loading: popularLoading, error: popularError } = useCars(shouldSkipFetch ? { limit: 0 } : { 
+    limit: 8, 
+    sortBy: 'price_desc' // Using high price as popularity proxy
+  })
+
+  // Use initial data if available, otherwise use API data
+  const featuredCars = initialData?.featuredCars || apiFeaturedCars
+  const recentCars = initialData?.recentCars || apiRecentCars
+  const popularCars = initialData?.popularCars || apiPopularCars
+
+  // Convert Car to VehicleCard format
+  const convertCarToVehicleCard = (car: Car) => ({
+    id: car.id,
+    title: `${car.year} ${car.make} ${car.model}`,
+    description: car.description.substring(0, 60) + '...',
+    image: car.images?.[0]?.url || '/images/placeholder-car.jpg',
+    price: formatPrice(car.price),
+    mileage: car.mileage ? `${car.mileage.toLocaleString()} Miles` : 'New',
+    fuelType: car.fuelType.charAt(0) + car.fuelType.slice(1).toLowerCase(),
+    transmission: car.transmissionType,
+    year: car.year.toString(),
+    badge: car.featured ? { text: 'Featured', color: 'blue' as const } : 
+           car.condition === 'NEW' ? { text: 'New', color: 'green' as const } :
+           car.mileage && car.mileage < 1000 ? { text: 'Low Mileage', color: 'blue' as const } : 
+           undefined,
+  })
+
+  // Get current vehicles based on active tab
+  const getCurrentVehicles = () => {
+    switch (activeTab) {
+      case 'Featured Cars':
+        return featuredCars.map(convertCarToVehicleCard)
+      case 'Popular Cars':
+        return popularCars.map(convertCarToVehicleCard)
+      case 'Recent Cars':
+      default:
+        return recentCars.map(convertCarToVehicleCard)
+    }
+  }
+
+  const getCurrentLoading = () => {
+    switch (activeTab) {
+      case 'Featured Cars':
+        return featuredLoading
+      case 'Popular Cars':
+        return popularLoading
+      case 'Recent Cars':
+      default:
+        return recentLoading
+    }
+  }
+
+  const getCurrentError = () => {
+    switch (activeTab) {
+      case 'Featured Cars':
+        return featuredError
+      case 'Popular Cars':
+        return popularError
+      case 'Recent Cars':
+      default:
+        return recentError
+    }
+  }
+
+  const vehicles = getCurrentVehicles()
+  const loading = getCurrentLoading()
+  const error = getCurrentError()
 
   return (
     <section className="py-16 bg-white">
@@ -154,23 +142,76 @@ export function VehicleShowcase({ onViewAll, onVehicleClick, onBookmark }: Vehic
 
         {/* Vehicle Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
-          {vehicles.map((vehicle) => (
-            <VehicleCard
-              key={vehicle.id}
-              id={vehicle.id}
-              title={vehicle.title}
-              description={vehicle.description}
-              image={vehicle.image}
-              price={vehicle.price}
-              mileage={vehicle.mileage}
-              fuelType={vehicle.fuelType}
-              transmission={vehicle.transmission}
-              year={vehicle.year}
-              badge={vehicle.badge}
-              onViewDetails={onVehicleClick}
-              onBookmark={onBookmark}
-            />
-          ))}
+          {loading ? (
+            // Loading skeleton
+            Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="w-full max-w-[320px] animate-pulse">
+                <div className="bg-gray-200 rounded-lg h-48 mb-4"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              </div>
+            ))
+          ) : error ? (
+            // Error state
+            <div className="col-span-full flex flex-col items-center justify-center py-12">
+              <div className="text-red-600 text-lg font-medium mb-2">
+                Failed to load vehicles
+              </div>
+              <div className="text-gray-600 text-sm mb-4">
+                {error}
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  switch (activeTab) {
+                    case 'Featured Cars':
+                      // Trigger refetch for featured cars
+                      break;
+                    case 'Popular Cars':
+                      // Trigger refetch for popular cars
+                      break;
+                    default:
+                      // Trigger refetch for recent cars
+                      break;
+                  }
+                }}
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : vehicles.length === 0 ? (
+            // Empty state
+            <div className="col-span-full flex flex-col items-center justify-center py-12">
+              <div className="text-gray-600 text-lg font-medium mb-2">
+                No vehicles found
+              </div>
+              <div className="text-gray-500 text-sm">
+                Check back later for new listings
+              </div>
+            </div>
+          ) : (
+            // Render vehicles
+            vehicles.map((vehicle) => (
+              <VehicleCard
+                key={vehicle.id}
+                id={vehicle.id}
+                title={vehicle.title}
+                description={vehicle.description}
+                image={vehicle.image}
+                price={vehicle.price}
+                mileage={vehicle.mileage}
+                fuelType={vehicle.fuelType}
+                transmission={vehicle.transmission}
+                year={vehicle.year}
+                badge={vehicle.badge}
+                onViewDetails={onVehicleClick}
+                onBookmark={onBookmark}
+              />
+            ))
+          )}
         </div>
       </div>
     </section>

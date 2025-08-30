@@ -13,7 +13,7 @@ datasource db {
 
 // Main entities - Style Nation Car Showroom Schema
 
-model User {
+model Admin {
   id                  String @id @default(uuid())
   name                String?
   email               String @unique
@@ -34,7 +34,7 @@ model User {
   // Business Relations
   createdCars         Car[]     @relation("CreatedBy")
 
-  @@map("users")
+  @@map("admins")
 }
 
 model Car {
@@ -42,7 +42,7 @@ model Car {
   make             String
   model            String
   year             Int
-  price            Decimal       @db.Decimal(10, 2)
+  price            Int           // Price in cents (e.g., $299.99 = 29999)
   mileage          Int?
   vin              String        @unique
   condition        Condition
@@ -56,17 +56,19 @@ model Car {
   description      String        @db.Text
   images           CarImage[]
   status           ListingStatus @default(AVAILABLE)
+  featured         Boolean       @default(false)
   featuredUntil    DateTime?
   facebookPostId   String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   createdBy        String
-  creator          User          @relation("CreatedBy", fields: [createdBy], references: [id])
+  creator          Admin         @relation("CreatedBy", fields: [createdBy], references: [id])
   inquiries        Inquiry[]
   viewCount        Int           @default(0)
 
   // Indexes for performance
   @@index([status])
+  @@index([featured])
   @@index([price])
   @@index([make, model])
   @@index([year])
@@ -102,6 +104,23 @@ model Inquiry {
   @@index([carId])
   @@index([status])
   @@map("inquiries")
+}
+
+model Contact {
+  id        String        @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  subject   String
+  message   String        @db.Text
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("contacts")
 }
 
 // Enums
@@ -149,6 +168,12 @@ enum BodyType {
 }
 
 enum InquiryStatus {
+  NEW
+  CONTACTED
+  CLOSED
+}
+
+enum ContactStatus {
   NEW
   CONTACTED
   CLOSED

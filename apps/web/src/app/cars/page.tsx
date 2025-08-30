@@ -1,72 +1,113 @@
-'use client'
-
-import { useState, useCallback } from 'react'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { FilterSidebar } from '@/components/cars/filter-sidebar'
-import { CarListing } from '@/components/cars/car-listing'
+import { Suspense } from 'react'
+import { AdaptiveHeader } from '@/components/adaptive/adaptive-header'
 import { Footer } from '@/components/layout/footer'
-import { CarFilters, SortOption } from '@/lib/types/car'
+import { CarsPageClient } from '@/components/cars/cars-page-client'
+import { carsAPI } from '@/lib/api/cars'
+import type { CarFilters, SortOption } from '@/lib/types/car'
 
-export default function CarsPage() {
-  const [filters, setFilters] = useState<CarFilters>({})
-  const [sortBy, setSortBy] = useState<SortOption>('price_asc')
+interface CarsPageProps {
+  searchParams: {
+    search?: string
+    make?: string
+    model?: string
+    minPrice?: string
+    maxPrice?: string
+    minYear?: string
+    maxYear?: string
+    condition?: string
+    transmission?: string
+    fuelType?: string
+    bodyType?: string
+    sortBy?: SortOption
+    page?: string
+  }
+}
 
-  const handleFiltersChange = useCallback((newFilters: CarFilters) => {
-    setFilters(newFilters)
-  }, [])
+// Convert URL search params to API filters
+function parseSearchParams(searchParams: CarsPageProps['searchParams']): CarFilters & { sortBy: SortOption; page: number } {
+  return {
+    search: searchParams.search,
+    make: searchParams.make,
+    model: searchParams.model,
+    minPrice: searchParams.minPrice ? parseInt(searchParams.minPrice) : undefined,
+    maxPrice: searchParams.maxPrice ? parseInt(searchParams.maxPrice) : undefined,
+    minYear: searchParams.minYear ? parseInt(searchParams.minYear) : undefined,
+    maxYear: searchParams.maxYear ? parseInt(searchParams.maxYear) : undefined,
+    condition: searchParams.condition ? [searchParams.condition as any] : undefined,
+    transmission: searchParams.transmission ? [searchParams.transmission as any] : undefined,
+    fuelType: searchParams.fuelType ? [searchParams.fuelType as any] : undefined,
+    bodyType: searchParams.bodyType ? [searchParams.bodyType as any] : undefined,
+    sortBy: (searchParams.sortBy as SortOption) || 'newest',
+    page: searchParams.page ? parseInt(searchParams.page) : 1,
+  }
+}
 
-  const handleSortChange = useCallback((newSort: SortOption) => {
-    setSortBy(newSort)
-  }, [])
+// Server-side data fetching
+async function getCarsData(filters: CarFilters & { sortBy: SortOption; page: number }) {
+  try {
+    const { sortBy, page, ...searchFilters } = filters
+    const carsResponse = await carsAPI.getCars({
+      ...searchFilters,
+      sortBy,
+      page,
+      limit: 20,
+    })
+    
+    const popularMakes = await carsAPI.getPopularMakes(20)
+    
+    return {
+      cars: carsResponse.cars,
+      totalCars: carsResponse.total,
+      totalPages: carsResponse.totalPages,
+      currentPage: carsResponse.page,
+      popularMakes,
+      success: true,
+    }
+  } catch (error) {
+    console.error('Failed to fetch cars data:', error)
+    return {
+      cars: [],
+      totalCars: 0,
+      totalPages: 0,
+      currentPage: 1,
+      popularMakes: [],
+      success: false,
+    }
+  }
+}
+
+export default async function CarsPage({ searchParams }: CarsPageProps) {
+  // Parse search parameters
+  const parsedFilters = parseSearchParams(searchParams)
+  
+  // Fetch cars data server-side
+  const carsData = await getCarsData(parsedFilters)
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Navigation */}
-      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto max-w-[1400px] px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Home
-                </Button>
-              </Link>
-              <div className="h-6 w-px bg-border" />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Style Nation</h1>
-                <p className="text-sm text-muted-foreground">Find Your Perfect Car</p>
+      <AdaptiveHeader variant="default" />
+      
+      <Suspense fallback={
+        <div className="container mx-auto max-w-[1400px] px-6 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div className="flex gap-8">
+              <div className="w-80 h-96 bg-gray-200 rounded"></div>
+              <div className="flex-1 space-y-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="h-32 bg-gray-200 rounded"></div>
+                ))}
               </div>
             </div>
-            <nav className="hidden md:flex items-center gap-6">
-              <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </Link>
-              <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </Link>
-              <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Login
-              </Link>
-            </nav>
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="container mx-auto max-w-[1400px] px-6 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <FilterSidebar onFiltersChange={handleFiltersChange} />
-          <CarListing 
-            filters={filters}
-            sortBy={sortBy}
-            onSortChange={handleSortChange}
-          />
-        </div>
-      </div>
-
+      }>
+        <CarsPageClient 
+          initialFilters={parsedFilters}
+          initialCarsData={carsData}
+        />
+      </Suspense>
+      
       <Footer />
     </div>
   )

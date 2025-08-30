@@ -47,7 +47,7 @@ export interface Car {
   make: string
   model: string
   year: number
-  price: number
+  price: number // Price in cents (e.g., $299.99 = 29999)
   mileage?: number
   vin: string
   condition: Condition
@@ -61,6 +61,7 @@ export interface Car {
   description: string
   images: CarImage[]
   status: ListingStatus
+  featured: boolean
   featuredUntil?: Date
   facebookPostId?: string
   createdAt: Date

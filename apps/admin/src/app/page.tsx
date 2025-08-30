@@ -1,19 +1,11 @@
-'use client'
+import { LoginForm } from '@/components/login-form';
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-
-export default function RootPage() {
-  const router = useRouter()
-
-  useEffect(() => {
-    // Redirect to login page as the landing page
-    router.push('/login')
-  }, [router])
-
+export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+    <div className="flex flex-col justify-center items-center bg-muted p-6 md:p-10 min-h-svh">
+      <div className="w-full max-w-sm md:max-w-3xl">
+        <LoginForm />
+      </div>
     </div>
-  )
+  );
 }

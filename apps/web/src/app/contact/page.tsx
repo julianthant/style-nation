@@ -2,17 +2,14 @@
 
 import { MainHeader } from '@/components/layout/main-header'
 import { Footer } from '@/components/layout/footer'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ContactForm } from '@/components/forms/contact-form'
+import { Card, CardContent } from '@/components/ui/card'
 import { Phone, Mail, MapPin, Clock } from 'lucide-react'
 
 export default function ContactPage() {
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Contact form submitted')
-    // TODO: Implement form submission
+  const handleContactSuccess = () => {
+    // Optional: Add any additional logic when contact form is successfully submitted
+    console.log('Contact form submitted successfully')
   }
 
   return (
@@ -29,53 +26,11 @@ export default function ContactPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Contact Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Send us a Message</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">First Name</label>
-                    <Input placeholder="Your first name" required />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Last Name</label>
-                    <Input placeholder="Your last name" required />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Email</label>
-                  <Input type="email" placeholder="your.email@example.com" required />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Phone</label>
-                  <Input type="tel" placeholder="+1 (555) 123-4567" />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Subject</label>
-                  <Input placeholder="How can we help you?" required />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Message</label>
-                  <Textarea 
-                    placeholder="Tell us more about what you're looking for..."
-                    rows={6}
-                    required
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" size="lg">
-                  Send Message
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <ContactForm 
+            onSuccess={handleContactSuccess}
+            title="Send us a Message"
+            description="Ready to find your dream car or sell your current vehicle? We're here to help you every step of the way."
+          />
 
           {/* Contact Information */}
           <div className="space-y-8">

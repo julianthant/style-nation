@@ -4,7 +4,7 @@ The starting point for a website for Style Nation, a car showroom in Mandalay, M
 
 ## Status
 
-Not started past setup. The single commit, from September 2025, is an unmodified copy of [ixartz/Next-js-Boilerplate](https://github.com/ixartz/Next-js-Boilerplate). It has Next.js 15, Tailwind CSS 4, Drizzle ORM and Clerk authentication. The repo is archived.
+Not started past setup. The first commit, from September 2025, is an unmodified copy of [ixartz/Next-js-Boilerplate](https://github.com/ixartz/Next-js-Boilerplate). It has Next.js 15, Tailwind CSS 4, Drizzle ORM and Clerk authentication.
 
 ## Run the scaffold
 
